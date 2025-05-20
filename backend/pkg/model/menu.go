@@ -3,6 +3,7 @@ package model
 import "errors"
 
 type MenuItem struct {
+	Id string `json:"id" db:"id"`
 	BaseEntity
 	RestaurantId string  `json:"restaurant_id" db:"restaurant_id"`
 	Name         string  `json:"name" db:"name"`
@@ -22,6 +23,9 @@ type GetMenuItemFilters struct {
 }
 
 func ValidateMenuItem(menuItem *MenuItem) error {
+	if menuItem.Id == "" {
+		return errors.New("id is required")
+	}
 	if menuItem.RestaurantId == "" {
 		return errors.New("restaurant id is required")
 	}

@@ -23,11 +23,8 @@ func ValidateRestaurant(restaurant *Restaurant) error {
 	if restaurant.Name == "" {
 		return errors.New("name is required")
 	}
-	if restaurant.Email == "" {
-		return errors.New("email is required")
-	}
-	if restaurant.Phone == "" {
-		return errors.New("phone is required")
+	if restaurant.Email == "" && restaurant.Phone == "" {
+		return errors.New("either email or phone is required")
 	}
 	if restaurant.AuthProvider == "" {
 		return errors.New("auth provider is required")
