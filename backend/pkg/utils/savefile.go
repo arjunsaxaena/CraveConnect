@@ -10,8 +10,8 @@ import (
 )
 
 const (
-	RestaurantImagesDir = "uploads/restaurant_images"
-	MenuImagesDir      = "uploads/menu_images"
+	RestaurantImagesDir = "../uploads/restaurant_images"
+	MenuImagesDir      = "../uploads/menu_images"
 )
 
 func SaveFile(file *multipart.FileHeader, directory string) (string, error) {
@@ -38,12 +38,12 @@ func SaveFile(file *multipart.FileHeader, directory string) (string, error) {
 	}
 	defer dst.Close()
 
-	// Copy file contents
 	if _, err := io.Copy(dst, src); err != nil {
 		return "", fmt.Errorf("failed to copy file contents: %v", err)
 	}
 
-	return filepath.Join(directory, filename), nil
+	dirName := filepath.Base(directory)
+	return filepath.Join(dirName, filename), nil
 }
 
 func SaveRestaurantImage(file *multipart.FileHeader) (string, error) {

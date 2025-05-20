@@ -26,27 +26,34 @@ func (c *RestaurantController) CreateRestaurant(ctx *gin.Context) {
 		return
 	}
 
-	imageFile, err := ctx.FormFile("image")
+	imageFile, err := ctx.FormFile("restaurant_image")
 	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "image is required"})
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "restaurant image is required"})
 		return
 	}
 	
-	imagePath, err := utils.SaveRestaurantImage(imageFile)
+	restaurantImagePath, err := utils.SaveRestaurantImage(imageFile)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save image"})
 		return
 	}
-	restaurant.ImagePath = imagePath
+	restaurant.ImagePath = restaurantImagePath
 
-	menuFile, err := ctx.FormFile("menu")
-	if err == nil {
-		menuPath, err := utils.SaveMenuImage(menuFile)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save menu"})
-			return
-		}
-		restaurant.MenuPath = menuPath
+	menuFile, err := ctx.FormFile("menu_image")
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "menu image is required"})
+		return
+	}
+	menuImagePath, err := utils.SaveMenuImage(menuFile)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save menu"})
+		return
+	}
+	restaurant.MenuPath = menuImagePath
+
+	if err := model.ValidateRestaurant(restaurant); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 
 	if err := c.repo.Create(ctx, restaurant); err != nil {
@@ -123,7 +130,7 @@ func (c *RestaurantController) UpdateRestaurant(ctx *gin.Context) {
 		existingRestaurant.AuthProvider = updateData.AuthProvider
 	}
 
-	imageFile, err := ctx.FormFile("image")
+	imageFile, err := ctx.FormFile("restaurant_image")
 	if err == nil {
 		imagePath, err := utils.SaveRestaurantImage(imageFile)
 		if err != nil {
@@ -133,7 +140,7 @@ func (c *RestaurantController) UpdateRestaurant(ctx *gin.Context) {
 		existingRestaurant.ImagePath = imagePath
 	}
 
-	menuFile, err := ctx.FormFile("menu")
+	menuFile, err := ctx.FormFile("menu_image")
 	if err == nil {
 		menuPath, err := utils.SaveMenuImage(menuFile)
 		if err != nil {
@@ -141,6 +148,11 @@ func (c *RestaurantController) UpdateRestaurant(ctx *gin.Context) {
 			return
 		}
 		existingRestaurant.MenuPath = menuPath
+	}
+
+	if err := model.ValidateRestaurant(existingRestaurant); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
 	}
 
 	if err := c.repo.Update(ctx, existingRestaurant); err != nil {
