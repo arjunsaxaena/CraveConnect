@@ -1,0 +1,12 @@
+CREATE TABLE menu_items (
+    id SERIAL PRIMARY KEY,
+    restaurant_id INT NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    description TEXT,
+    price DECIMAL(8,2) NOT NULL CHECK (price >= 0),
+    image_path VARCHAR(255),
+    -- embedding_ref VARCHAR(255),
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
