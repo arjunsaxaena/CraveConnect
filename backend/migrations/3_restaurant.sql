@@ -6,7 +6,6 @@ CREATE TABLE restaurants (
     auth_provider TEXT CHECK (auth_provider IN ('google', 'phone')) NOT NULL,
     image_path TEXT,
     menu_path TEXT,
-    meta JSONB DEFAULT '{}',
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

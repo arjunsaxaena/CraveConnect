@@ -1,12 +1,10 @@
 package model
 
-import "errors"
-
 type Restaurant struct {
 	BaseEntity
 	IPerson
-	ImagePath    string `json:"image_path" db:"image_path"`
-	MenuPath     string `json:"menu_path" db:"menu_path"`
+	ImagePath    string `json:"image_path" db:"image_path" form:"image_path"`
+	MenuPath     string `json:"menu_path" db:"menu_path" form:"menu_path"`
 }
 
 type GetRestaurantFilters struct {
@@ -18,20 +16,24 @@ type GetRestaurantFilters struct {
 	IsActive *bool `json:"is_active" db:"is_active"`
 }
 
-func ValidateRestaurant(restaurant *Restaurant) error {
+// func ValidateRestaurant(restaurant *Restaurant) error {
 	
-	if restaurant.Name == "" {
-		return errors.New("name is required")
-	}
-	if restaurant.Email == "" {
-		return errors.New("email is required")
-	}
-	if restaurant.Phone == "" {
-		return errors.New("phone is required")
-	}
-	if restaurant.AuthProvider == "" {
-		return errors.New("auth provider is required")
-	}
+// 	if restaurant.Name == "" {
+// 		return errors.New("name is required")
+// 	}
+// 	if restaurant.Email == "" {
+// 		return errors.New("email is required")
+// 	}
+// 	if restaurant.Phone == "" {
+// 		return errors.New("phone is required")
+// 	}
+// 	if restaurant.AuthProvider == "" {
+// 		return errors.New("auth provider is required")
+// 	}
 	
-	return nil
-}
+// 	return nil
+// }
+
+
+// ToDo - Use validation function in controller layer
+// ToDo - Make validation function for update controller and use use it in update controller
