@@ -13,7 +13,7 @@ import (
 var DB *sqlx.DB
 
 func Connect() {
-	err := godotenv.Load("../../.env")
+	err := godotenv.Load()
 	if err != nil {
 		log.Printf("Warning: .env file not found, using environment variables: %v", err)
 	} // Didn't knew godotenv required relative path for .env

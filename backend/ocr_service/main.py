@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 import google.generativeai as genai
 import os
@@ -47,18 +47,29 @@ def extract_menu_items(image_data: bytes) -> List[Dict]:
         
         # Prompt for the model
         prompt = """
-        Analyze this menu image and extract all menu items with their prices.
-        Return the data in the following JSON format:
+        You are an expert at extracting structured data from restaurant menus. Given the following menu image, extract all menu items and their details.
+
+        You are an expert at extracting structured data from restaurant menus. Given the following menu image, extract all menu items and their details.
+
+        Return the data as valid JSON in this format (no markdown, no explanations, no extra text):
+
         {
-            "items": [
-                {
-                    "name": "item name",
-                    "description": "item description",
-                    "price": price_value
-                }
-            ]
+        "items": [
+            {
+            "name": "item name",
+            "description": "item description or null if not available",
+            "price": price_value (as a number, no currency symbol or text)
+            }
+        ]
         }
-        Only return the JSON, no other text.
+
+        Instructions:
+        - For each menu item, include its name and price.
+        - If a description is present, include it as a string. If not, use null.
+        - Make sure each price is a number (e.g., 249.00), with no currency symbols or extra text.
+        - Only include actual menu items (ignore section headers, add-ons, footers, and non-item text).
+        - If an item has multiple prices (for different sizes), create a separate entry for each size, appending the size in parentheses to the item name. Example: "Veggie Pizza (Large)".
+        - Only output valid JSON as specified above. Do not include markdown code fencing or any explanation.
         """
         
         # Generate response
@@ -70,6 +81,8 @@ def extract_menu_items(image_data: bytes) -> List[Dict]:
             json_str = response.text.strip()
             if json_str.startswith("```json"):
                 json_str = json_str[7:-3]  # Remove ```json and ``` markers
+            elif json_str.startswith("```"):
+                json_str = json_str.split("```")[1]
             data = json.loads(json_str)
             return data.get("items", [])
         except json.JSONDecodeError as e:
@@ -108,10 +121,11 @@ def create_menu_items(restaurant_id: str, items: List[Dict]) -> bool:
 
 @app.post("/process-menu")
 async def process_menu(
-    restaurant_id: str,
+    restaurant_id: str = Form(...),
     menu_image: UploadFile = File(...)
 ):
     """Process menu image and create menu items."""
+    logger.info(f"Received request with restaurant_id: {restaurant_id}")
     try:
         # Read image data
         image_data = await menu_image.read()
@@ -137,4 +151,4 @@ async def process_menu(
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8003) 
+    uvicorn.run(app, host="0.0.0.0", port=8003)

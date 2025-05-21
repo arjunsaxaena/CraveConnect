@@ -8,4 +8,4 @@ python-multipart
 pydantic
 pydantic-settings
 python-dotenv
-
+json5
