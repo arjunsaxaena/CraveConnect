@@ -1,0 +1,11 @@
+requests
+dotenv
+google-generativeai
+pytesseract
+fastapi
+uvicorn
+python-multipart
+pydantic
+pydantic-settings
+python-dotenv
+

@@ -1,6 +1,10 @@
 package controller
 
 import (
+	"bytes"
+	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
 
 	"github.com/arjunsaxaena/CraveConnect.git/backend/pkg/model"
@@ -60,6 +64,15 @@ func (c *RestaurantController) CreateRestaurant(ctx *gin.Context) {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+
+	if err := c.processMenuWithOCR(restaurant.Id, menuFile); err != nil {
+		ctx.JSON(http.StatusCreated, gin.H{
+			"restaurant": restaurant,
+			"warning":    "Restaurant created but menu processing failed: " + err.Error(),
+		})
+		return
+	}
+
 	ctx.JSON(http.StatusCreated, restaurant)
 }
 
@@ -148,6 +161,14 @@ func (c *RestaurantController) UpdateRestaurant(ctx *gin.Context) {
 			return
 		}
 		existingRestaurant.MenuPath = menuPath
+
+		if err := c.processMenuWithOCR(existingRestaurant.Id, menuFile); err != nil {
+			ctx.JSON(http.StatusOK, gin.H{
+				"restaurant": existingRestaurant,
+				"warning":    "Restaurant updated but menu processing failed: " + err.Error(),
+			})
+			return
+		}
 	}
 
 	if err := model.ValidateRestaurant(existingRestaurant); err != nil {
@@ -169,4 +190,52 @@ func (c *RestaurantController) DeleteRestaurant(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{"message": "restaurant deleted"})
+}
+
+func (c *RestaurantController) processMenuWithOCR(restaurantID string, menuFile *multipart.FileHeader) error {
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	if err := writer.WriteField("restaurant_id", restaurantID); err != nil {
+		return err
+	}
+
+	src, err := menuFile.Open()
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+
+	part, err := writer.CreateFormFile("menu_image", menuFile.Filename)
+	if err != nil {
+		return err
+	}
+
+	if _, err = io.Copy(part, src); err != nil {
+		return err
+	}
+
+	if err = writer.Close(); err != nil {
+		return err
+	}
+
+	req, err := http.NewRequest("POST", "http://localhost:8003/process-menu", body)
+	if err != nil {
+		return err
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		return fmt.Errorf("OCR service returned error: %s", string(bodyBytes))
+	}
+
+	return nil
 }

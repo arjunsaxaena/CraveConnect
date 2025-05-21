@@ -1,8 +1,8 @@
 CREATE TABLE restaurants (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
-    email TEXT UNIQUE,
-    phone VARCHAR(15) UNIQUE,
+    email TEXT,
+    phone VARCHAR(15),
     auth_provider TEXT CHECK (auth_provider IN ('google', 'phone')) NOT NULL,
     image_path TEXT,
     menu_path TEXT,
