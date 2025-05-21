@@ -3,10 +3,11 @@ package model
 import "errors"
 
 type Restaurant struct {
+	Id        string `json:"id" db:"id" form:"id"`
 	BaseEntity
 	IPerson
-	ImagePath string `json:"image_path" db:"image_path"`
-	MenuPath  string `json:"menu_path" db:"menu_path"`
+	ImagePath string `json:"image_path" db:"image_path" form:"image_path"`
+	MenuPath  string `json:"menu_path" db:"menu_path" form:"menu_path"`
 }
 
 type GetRestaurantFilters struct {

@@ -20,7 +20,6 @@ func main() {
 	{
 		menuRoutes.POST("", menuController.CreateMenuItem)
 		menuRoutes.GET("", menuController.GetMenuItems)
-		menuRoutes.GET("/restaurant/:id", menuController.GetMenuItemsByRestaurant)
 		menuRoutes.PATCH("", menuController.UpdateMenuItem)
 		menuRoutes.DELETE("/:id", menuController.DeleteMenuItem)
 	}

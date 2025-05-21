@@ -28,7 +28,7 @@ func (c *MenuController) CreateMenuItem(ctx *gin.Context) {
 	}
 
 	imageFile, err := ctx.FormFile("item_image")
-	if err == nil { // Image is optional
+	if err == nil {
 		itemImagePath, err := utils.SaveMenuItemImage(imageFile)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save image"})
@@ -78,25 +78,6 @@ func (c *MenuController) GetMenuItems(ctx *gin.Context) {
 	if isActive := ctx.Query("is_active"); isActive != "" {
 		active := isActive == "true"
 		filters.IsActive = &active
-	}
-
-	menuItems, err := c.repo.Get(ctx, "", filters)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	ctx.JSON(http.StatusOK, menuItems)
-}
-
-func (c *MenuController) GetMenuItemsByRestaurant(ctx *gin.Context) {
-	restaurantId := ctx.Param("id")
-	if restaurantId == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "restaurant id is required"})
-		return
-	}
-
-	filters := &model.GetMenuItemFilters{
-		RestaurantId: &restaurantId,
 	}
 
 	menuItems, err := c.repo.Get(ctx, "", filters)

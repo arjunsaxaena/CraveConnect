@@ -3,14 +3,13 @@ package model
 import "errors"
 
 type MenuItem struct {
-	Id string `json:"id" db:"id"`
+	Id           string  `json:"id" db:"id" form:"id"`
 	BaseEntity
-	RestaurantId string  `json:"restaurant_id" db:"restaurant_id"`
-	Name         string  `json:"name" db:"name"`
-	Description  string  `json:"description" db:"description"`
-	Price        float64 `json:"price" db:"price"`
-	ImagePath    string  `json:"image_path" db:"image_path"`
-	IsActive     bool    `json:"is_active" db:"is_active"`
+	RestaurantId string  `json:"restaurant_id" db:"restaurant_id" form:"restaurant_id"`
+	Name         string  `json:"name" db:"name" form:"name"`
+	Description  string  `json:"description" db:"description" form:"description"`
+	Price        float64 `json:"price" db:"price" form:"price"`
+	ImagePath    string  `json:"image_path" db:"image_path" form:"image_path"`
 }
 
 type GetMenuItemFilters struct {
@@ -23,9 +22,6 @@ type GetMenuItemFilters struct {
 }
 
 func ValidateMenuItem(menuItem *MenuItem) error {
-	if menuItem.Id == "" {
-		return errors.New("id is required")
-	}
 	if menuItem.RestaurantId == "" {
 		return errors.New("restaurant id is required")
 	}

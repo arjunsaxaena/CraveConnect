@@ -1,6 +1,6 @@
 CREATE TABLE menu_items (
-    id SERIAL PRIMARY KEY,
-    restaurant_id INT NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
     name VARCHAR(255) NOT NULL,
     description TEXT,
     price DECIMAL(8,2) NOT NULL CHECK (price >= 0),
