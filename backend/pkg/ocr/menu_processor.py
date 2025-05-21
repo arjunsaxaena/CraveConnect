@@ -1,256 +1,170 @@
+"""
+Menu Processor - Main module for the menu processing pipeline.
+
+This module orchestrates the complete OCR and LLM processing pipeline:
+1. Extract text via OCR
+2. Structure the data via Gemini LLM
+3. Map to database schema
+4. Verify data quality
+5. Send to API endpoint
+"""
 import os
 import json
-import uuid
-import psycopg2
-from psycopg2.extras import RealDictCursor
-from datetime import datetime
-from typing import List, Dict, Any, Optional
-from PIL import Image
-import pytesseract
-import google.generativeai as genai
-import numpy as np
-import dotenv
 import logging
+import dotenv
+from typing import Dict, Any, Optional
 
-# Set up logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+# Import module components
+from .ocr import ocr_image
+from .llm import gemini_parse_menu
+from .schema import map_to_menuitems
+from .verification import verify_menu_items, verify_restaurant_exists
+from .api import submit_menu_items_api
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 # Load environment variables
-dotenv.load_dotenv("../../.env")
+dotenv.load_dotenv()
 
-# Database connection parameters
-DB_URL = os.getenv("DB_URL")
-
-def connect_to_db():
-    """Connect to PostgreSQL database."""
+def process_menu_image(
+    image_path: str,
+    restaurant_id: str,
+    api_base_url: str,
+    gemini_api_key: str,
+    api_key: Optional[str] = None,
+    image_base_path: Optional[str] = None,
+    verify_only: bool = False,
+    skip_restaurant_check: bool = False
+) -> Dict[str, Any]:
+    """
+    Process a menu image through the complete pipeline.
+    
+    Pipeline:
+    1. OCR text extraction
+    2. LLM parsing to structured data
+    3. Schema mapping
+    4. Verification
+    5. API submission (if verify_only=False)
+    """
     try:
-        conn = psycopg2.connect(DB_URL)
-        return conn
-    except Exception as e:
-        logger.error(f"Database connection error: {e}")
-        raise
-
-def ocr_image(image_path: str) -> str:
-    try:
-        image = Image.open(image_path)
-        text = pytesseract.image_to_string(image)
-        logger.info(f"OCR extracted {len(text)} characters from image")
-        return text
-    except Exception as e:
-        logger.error(f"OCR extraction error: {e}")
-        raise
-
-def gemini_parse_menu(raw_text: str, api_key: str) -> str:
-    try:
-        genai.configure(api_key=api_key)
-        prompt = f"""
-        You are a data extraction expert. Your task is to convert unstructured restaurant menu text (from OCR or scanned images) into structured data for a PostgreSQL database table called `MenuItems`. The table’s schema is:
-
-        - id: UUID (unique identifier for each menu item, you can ignore this for now)
-        - restaurant_id: UUID (not relevant in extraction, ignore)
-        - name: VARCHAR(100) (dish name)
-        - description: TEXT (dish description, may be missing)
-        - price: DECIMAL(8,2) (price, always as a number, e.g., 199.00)
-        - image_url: VARCHAR(255) (ignore for extraction, leave blank)
-        - embedding_ref: VARCHAR(255) (ignore for extraction, leave blank)
-        - created_at: TIMESTAMP (ignore for extraction)
-        - updated_at: TIMESTAMP (ignore for extraction)
-
-        **Menu items can have multiple sizes (like Regular, Medium, Large, S, M, L, 8", 11", 16", etc.), and each size has a different price. Some items have no sizes. Some items have categories (like "Veg Pizzas" or "Non-Veg Pizzas"). Some have descriptions, some do not. Sometimes sizes and prices are in columns, sometimes in a list, sometimes in parentheses. Layouts vary.**
-
-        **Your job is:**
-        1. Extract each menu item, its name, description (if present), and for each available size, a separate object with the size and price.
-        2. If there are categories or sections, include them as a `"category"` field.
-        3. Output a flat JSON array, where each object represents a single menu item for a single size. For items with multiple sizes, output one object per size.
-        4. For items with only one price (no size), output a single object with `"size"` set to `null`.
-        5. For all prices, output as a number (not as a string, no currency symbols or slashes).
-        6. Ignore non-menu content, footers, disclaimers, "Add Ons", and upgrades unless they are formatted as main menu items.
-
-        **Each JSON object should have these fields:**
-        - name: string (e.g. "Margherita")
-        - description: string or null (e.g. "Cheesy Classic" or null)
-        - category: string or null (e.g. "Veg Pizzas" or null)
-        - size: string or null (e.g. "Regular", "Medium", "Large", "S 8\"", "L 16\"", or null)
-        - price: number (e.g. 199.00)
-
-        **Output only the JSON array. Do not include explanations, markdown, or any other text.**
-
-        **Menu text to extract:**
-        {raw_text}
-        """
+        # 1. Restaurant verification (if not skipped)
+        if not skip_restaurant_check:
+            if not verify_restaurant_exists(restaurant_id, api_base_url, api_key):
+                return {
+                    "success": False,
+                    "error": f"Restaurant with ID {restaurant_id} not found"
+                }
         
-        model = genai.GenerativeModel('gemini-2.0-pro')
-        response = model.generate_content([prompt])
+        # 2. OCR text extraction
+        raw_text = ocr_image(image_path)
         
-        # Extract JSON from response
-        result = response.text
-        # Find JSON content 
-        if "```json" in result:
-            json_content = result.split("```json")[1].split("```")[0].strip()
-        elif "```" in result:
-            json_content = result.split("```")[1].strip()
-        else:
-            json_content = result.strip()
-            
-        # Validate JSON
-        json.loads(json_content)  # This will raise an error if invalid JSON
-        logger.info(f"Successfully parsed menu with Gemini, found structured items")
-        return json_content
+        # 3. LLM parsing
+        parsed_items = gemini_parse_menu(raw_text, gemini_api_key)
         
-    except Exception as e:
-        logger.error(f"Gemini API error: {e}")
-        raise
-
-def map_to_menuitems(json_str: str, restaurant_id: str, image_path: Optional[str] = None) -> List[Dict[str, Any]]:
-    try:
-        items = json.loads(json_str)
-        rows = []
-        now = datetime.now()
+        # 4. Schema mapping
+        menu_items = map_to_menuitems(parsed_items, restaurant_id, image_base_path)
         
-        for item in items:
-            # Combine size with name if size exists
-            name = item['name']
-            if 'size' in item and item['size']:
-                name = f"{name} ({item['size']})"
-            
-            # Convert price to float, removing any currency symbol if present
-            price_str = str(item["price"]).replace("$", "").replace("₹", "")
-            
-            row = {
-                "id": str(uuid.uuid4()),
-                "restaurant_id": restaurant_id,
-                "name": name,
-                "description": item.get("description", ""),
-                "price": float(price_str),
-                "image_path": image_path,
-                "is_active": True,
-                "created_at": now,
-                "updated_at": now
+        # 5. Verification
+        verification_result = verify_menu_items(menu_items)
+        
+        # Return early if verification failed or in verify-only mode
+        if not verification_result["valid"] or verify_only:
+            return {
+                "success": verification_result["valid"],
+                "verification": verification_result,
+                "items_count": len(verification_result["items"])
             }
-            rows.append(row)
-            
-        logger.info(f"Mapped {len(rows)} menu items to database schema")
-        return rows
         
+        # 6. API submission
+        api_result = submit_menu_items_api(
+            verification_result["items"],
+            api_base_url,
+            api_key
+        )
+        
+        return {
+            "success": True,
+            "verification": verification_result,
+            "api_response": api_result,
+            "items_count": len(verification_result["items"])
+        }
+    
     except Exception as e:
-        logger.error(f"Error mapping menu items: {e}")
-        raise
+        logger.error(f"Menu processing failed: {e}", exc_info=True)
+        return {
+            "success": False,
+            "error": str(e)
+        }
 
-def insert_menuitems(conn, menu_items: List[Dict[str, Any]]) -> List[str]:
-    inserted_ids = []
-    cursor = conn.cursor()
-    
-    try:
-        for item in menu_items:
-            cursor.execute("""
-                INSERT INTO menu_items (
-                    id, restaurant_id, name, description, price, 
-                    image_path, is_active, created_at, updated_at
-                ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
-                RETURNING id
-            """, (
-                item["id"], item["restaurant_id"], item["name"], 
-                item["description"], item["price"], item["image_path"], 
-                item["is_active"], item["created_at"], item["updated_at"]
-            ))
-            inserted_id = cursor.fetchone()[0]
-            inserted_ids.append(inserted_id)
-            
-        conn.commit()
-        logger.info(f"Successfully inserted {len(inserted_ids)} menu items into database")
-        return inserted_ids
-        
-    except Exception as e:
-        conn.rollback()
-        logger.error(f"Database insertion error: {e}")
-        raise
-    finally:
-        cursor.close()
 
-# def generate_embeddings(conn, menu_item_ids: List[str]):
-#     """Generate embeddings for menu items and update database.
-    
-#     This is a placeholder. In a real implementation, you would:
-#     1. Fetch menu items from database
-#     2. Generate embeddings using an embedding model
-#     3. Store embeddings in your vector database
-#     4. Update the menu_items table with references to the embeddings
-    
-#     Args:
-#         conn: Database connection
-#         menu_item_ids: List of menu item IDs to generate embeddings for
-#     """
-#     cursor = conn.cursor(cursor_factory=RealDictCursor)
-    
-#     try:
-#         # Fetch menu items
-#         placeholders = ','.join(['%s'] * len(menu_item_ids))
-#         cursor.execute(
-#             f"SELECT id, name, description FROM menu_items WHERE id IN ({placeholders})",
-#             menu_item_ids
-#         )
-#         items = cursor.fetchall()
-        
-#         # In a real implementation:
-#         # 1. Generate embeddings
-#         # 2. Store in vector database
-#         # 3. Update menu_items with embedding references
-        
-#         logger.info(f"Embeddings would be generated for {len(items)} menu items")
-        
-#     except Exception as e:
-#         logger.error(f"Error generating embeddings: {e}")
-#         raise
-#     finally:
-#         cursor.close()
-
-def process_menu_image(image_path: str, restaurant_id: str, gemini_api_key: str, 
-                      menu_item_image_path: Optional[str] = None, 
-                      generate_embeddings_flag: bool = False) -> List[Dict[str, Any]]:
-    """Process a menu image and insert extracted items into the database."""
-    # Step 1: OCR extraction
-    raw_text = ocr_image(image_path)
-    
-    # Step 2: LLM structuring with Gemini
-    menu_json = gemini_parse_menu(raw_text, gemini_api_key)
-    
-    # Step 3: Map to database schema
-    menu_items = map_to_menuitems(menu_json, restaurant_id, menu_item_image_path)
-    
-    # Step 4: Insert into database
-    conn = connect_to_db()
-    try:
-        inserted_ids = insert_menuitems(conn, menu_items)
-        
-        # Step 5: Generate embeddings if requested
-        # if generate_embeddings_flag:
-        #     generate_embeddings(conn, inserted_ids)
-            
-        return menu_items
-    finally:
-        conn.close()
-
-# Example usage
 if __name__ == "__main__":
-    # These would be provided by your application
-    SAMPLE_IMAGE_PATH = "../uploads/menu_images/sample_menu.jpg"
-    RESTAURANT_ID = "your-restaurant-uuid"
-    GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-    
-    if not os.path.exists(SAMPLE_IMAGE_PATH):
-        logger.error(f"Image file not found: {SAMPLE_IMAGE_PATH}")
-    elif not GEMINI_API_KEY:
-        logger.error("GEMINI_API_KEY not found in environment variables")
-    else:
-        try:
-            menu_items = process_menu_image(
-                SAMPLE_IMAGE_PATH, 
-                RESTAURANT_ID,
-                GEMINI_API_KEY
-            )
-            print(f"Processed {len(menu_items)} menu items")
-            for item in menu_items:
+    # Example usage
+    try:
+        # Config from environment variables
+        GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+        API_BASE_URL = os.getenv("MENU_SERVICE_URL", "http://localhost:8002")
+        API_KEY = os.getenv("API_KEY")
+        
+        # In a real application, these values would be fetched automatically:
+        # - Restaurant ID would come from the authenticated user's context or API request
+        # - Image path would come from file upload or a selected file in the UI
+        
+        # Example of how these might be fetched in a web application:
+        # def process_uploaded_menu(request):
+        #     restaurant_id = request.user.restaurant_id  # From authenticated user
+        #     uploaded_file = request.FILES['menu_image']  # From form upload
+        #     temp_image_path = save_temp_file(uploaded_file)
+        
+        RESTAURANT_ID = "sample-restaurant-uuid"  # In production: fetched from session/context
+        SAMPLE_IMG = "../uploads/menu_images/sample_menu.jpg"  # In production: from file upload
+        
+        # First verify only to check extraction quality
+        print("Verifying menu extraction...")
+        result = process_menu_image(
+            image_path=SAMPLE_IMG,
+            restaurant_id=RESTAURANT_ID,
+            api_base_url=API_BASE_URL,
+            gemini_api_key=GEMINI_API_KEY,
+            verify_only=True,
+            skip_restaurant_check=True  # Skip for demo purposes
+        )
+        
+        if result["success"]:
+            print(f"Verification successful: {result['items_count']} items extracted")
+            
+            # Preview items (first 3)
+            items = result["verification"]["items"][:3]
+            for item in items:
                 print(f"- {item['name']}: ${item['price']}")
-        except Exception as e:
-            logger.error(f"Error processing menu: {e}")
+            
+            if len(result["verification"]["items"]) > 3:
+                print(f"...and {len(result['verification']['items']) - 3} more items")
+                
+            # API submission confirmation
+            if input("Submit to API? (y/n): ").lower() == 'y':
+                submit_result = process_menu_image(
+                    image_path=SAMPLE_IMG,
+                    restaurant_id=RESTAURANT_ID,
+                    api_base_url=API_BASE_URL,
+                    gemini_api_key=GEMINI_API_KEY,
+                    api_key=API_KEY
+                )
+                
+                if submit_result["success"]:
+                    print("API submission successful!")
+                else:
+                    print(f"API submission failed: {submit_result.get('error')}")
+        else:
+            print(f"Verification failed: {result.get('error', 'Unknown error')}")
+            
+            if "verification" in result:
+                for item in result["verification"]["invalid_items"]:
+                    print(f"- {item['item']['name']}: {', '.join(item['errors'])}")
+    
+    except Exception as e:
+        print(f"Error: {e}")
