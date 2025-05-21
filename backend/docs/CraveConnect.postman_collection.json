@@ -1,0 +1,324 @@
+{
+	"info": {
+		"_postman_id": "c2387d59-9af9-4141-bc7e-8223cade0c83",
+		"name": "CraveConnect",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "39713995"
+	},
+	"item": [
+		{
+			"name": "Restaurant",
+			"item": [
+				{
+					"name": "get-restaurant",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8001/api/restaurants",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8001",
+							"path": [
+								"api",
+								"restaurants"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "create-restaurant",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "name",
+									"value": "Lets Go Live",
+									"type": "text"
+								},
+								{
+									"key": "phone",
+									"value": "9718768880",
+									"type": "text"
+								},
+								{
+									"key": "auth_provider",
+									"value": "phone",
+									"type": "text"
+								},
+								{
+									"key": "restaurant_image",
+									"type": "file",
+									"src": "/home/wendigo/Pictures/cursor.png"
+								},
+								{
+									"key": "menu_image",
+									"type": "file",
+									"src": "/home/wendigo/Pictures/kali-linux-wallpaper-v2.png"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8001/api/restaurants",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8001",
+							"path": [
+								"api",
+								"restaurants"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update-restaurant",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "name",
+									"value": "Lets Go Live",
+									"type": "text"
+								},
+								{
+									"key": "restaurant_image",
+									"type": "file",
+									"src": "/home/wendigo/Pictures/kali-linux-wallpaper-v1.png",
+									"disabled": true
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8001/api/restaurants?id=ce2f886f-f579-4fe6-9826-20936ea70250",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8001",
+							"path": [
+								"api",
+								"restaurants"
+							],
+							"query": [
+								{
+									"key": "id",
+									"value": "ce2f886f-f579-4fe6-9826-20936ea70250"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete-restaurant",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8001/api/restaurants/5f21d084-a14d-41ed-ab3c-a0f72479e22f",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8001",
+							"path": [
+								"api",
+								"restaurants",
+								"5f21d084-a14d-41ed-ab3c-a0f72479e22f"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Menu",
+			"item": [
+				{
+					"name": "get-menu",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8002/api/menu",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8002",
+							"path": [
+								"api",
+								"menu"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "create-menu",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "restaurant_id",
+									"value": "ce2f886f-f579-4fe6-9826-20936ea70250",
+									"type": "text"
+								},
+								{
+									"key": "name",
+									"value": "Pasta",
+									"type": "text"
+								},
+								{
+									"key": "description",
+									"value": "White Sauce Pasta",
+									"type": "text"
+								},
+								{
+									"key": "price",
+									"value": "200",
+									"type": "text"
+								},
+								{
+									"key": "item_image",
+									"type": "file",
+									"src": "/home/wendigo/Pictures/cursor.png"
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8002/api/menu",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8002",
+							"path": [
+								"api",
+								"menu"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "update-menu",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "PATCH",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "restaurant_id",
+									"value": "ce2f886f-f579-4fe6-9826-20936ea70252",
+									"type": "text"
+								},
+								{
+									"key": "name",
+									"value": "Pizza",
+									"type": "text"
+								},
+								{
+									"key": "description",
+									"value": "White Sauce Pasta",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "price",
+									"value": "200",
+									"type": "text",
+									"disabled": true
+								},
+								{
+									"key": "item_image",
+									"type": "file",
+									"src": "/home/wendigo/Pictures/cursor.png",
+									"disabled": true
+								}
+							]
+						},
+						"url": {
+							"raw": "http://localhost:8002/api/menu?id=cc796a0a-b0c6-4f40-b41d-5452a127fc02",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8002",
+							"path": [
+								"api",
+								"menu"
+							],
+							"query": [
+								{
+									"key": "id",
+									"value": "cc796a0a-b0c6-4f40-b41d-5452a127fc02"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "delete-menu",
+					"request": {
+						"auth": {
+							"type": "noauth"
+						},
+						"method": "DELETE",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:8002/api/menu/cc796a0a-b0c6-4f40-b41d-5452a127fc02",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "8002",
+							"path": [
+								"api",
+								"menu",
+								"cc796a0a-b0c6-4f40-b41d-5452a127fc02"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
