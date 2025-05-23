@@ -4,7 +4,6 @@ from app.routes import router
 
 app = FastAPI(title="OCR Service")
 
-# Configure CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
