@@ -75,6 +75,9 @@ func (c *MenuController) GetMenuItems(ctx *gin.Context) {
 			filters.PriceMax = &max
 		}
 	}
+	if size := ctx.Query("size"); size != "" {
+		filters.Size = &size
+	}
 	if isActive := ctx.Query("is_active"); isActive != "" {
 		active := isActive == "true"
 		filters.IsActive = &active
@@ -120,6 +123,9 @@ func (c *MenuController) UpdateMenuItem(ctx *gin.Context) {
 	}
 	if updateData.Price > 0 {
 		existingItem.Price = updateData.Price
+	}
+	if updateData.Size != "" {
+		existingItem.Size = updateData.Size
 	}
 	if updateData.RestaurantId != "" {
 		existingItem.RestaurantId = updateData.RestaurantId

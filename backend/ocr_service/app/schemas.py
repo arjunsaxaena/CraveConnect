@@ -72,20 +72,26 @@ def merge_menu_items(vision_items: List[Dict], ocr_items: List[Dict]) -> List[Di
         if name is None or not str(name).strip():
             continue
             
-        if item.get("price") is not None:
-            try:
-                item["price"] = float(item["price"])
+        price_info = item.get("price")
+        if price_info is not None:
+            if isinstance(price_info, dict):
                 valid_items.append(item)
-            except (ValueError, TypeError):
-                price_str = str(item["price"]).strip()
-                if price_str.endswith("/-"):
-                    price_str = price_str[:-2]
+            else:
                 try:
-                    item["price"] = float(price_str)
+                    price = float(price_info)
+                    item["price"] = price
                     valid_items.append(item)
                 except (ValueError, TypeError):
-                    logger.warning(f"Skipping item with invalid price: {item}")
-                    continue
+                    price_str = str(price_info).strip()
+                    if price_str.endswith("/-"):
+                        price_str = price_str[:-2]
+                    try:
+                        price = float(price_str)
+                        item["price"] = price
+                        valid_items.append(item)
+                    except (ValueError, TypeError):
+                        logger.warning(f"Skipping item with invalid price: {item}")
+                        continue
         else:
             logger.warning(f"Skipping item without price: {item}")
     
@@ -121,27 +127,53 @@ def map_to_menu_items(restaurant_id: str, items: List[Dict]) -> List[Dict]:
             category_prefix = f"Category: {category}"
             description = f"{category_prefix}\n{description}".strip()
             
-        price = 0
-        try:
-            price_raw = item.get("price", 0)
-            price = float(price_raw)
-        except (ValueError, TypeError):
-            price_str = str(price_raw).strip()
-            if price_str.endswith("/-"):
-                price_str = price_str[:-2]
+        price_info = item.get("price", {})
+        if isinstance(price_info, dict):
+            for size, price in price_info.items():
+                try:
+                    price_value = float(price)
+                    menu_item = {
+                        "restaurant_id": restaurant_id,
+                        "name": name,
+                        "description": description,
+                        "price": price_value,
+                        "size": size.strip(),
+                        "is_active": True
+                    }
+                    menu_items.append(menu_item)
+                except (ValueError, TypeError):
+                    logger.warning(f"Invalid price for size {size}: {price}")
+        else:
             try:
-                price = float(price_str)
+                price_raw = price_info
+                price = float(price_raw)
+                menu_item = {
+                    "restaurant_id": restaurant_id,
+                    "name": name,
+                    "description": description,
+                    "price": price,
+                    "size": "",
+                    "is_active": True
+                }
+                menu_items.append(menu_item)
             except (ValueError, TypeError):
-                price = 0
-                
-        menu_item = {
-            "restaurant_id": restaurant_id,
-            "name": name,
-            "description": description,
-            "price": price,
-            "is_active": True
-        }
-        menu_items.append(menu_item)
+                price_str = str(price_raw).strip()
+                if price_str.endswith("/-"):
+                    price_str = price_str[:-2]
+                try:
+                    price = float(price_str)
+                    menu_item = {
+                        "restaurant_id": restaurant_id,
+                        "name": name,
+                        "description": description,
+                        "price": price,
+                        "size": "",
+                        "is_active": True
+                    }
+                    menu_items.append(menu_item)
+                except (ValueError, TypeError):
+                    logger.warning(f"Skipping item with invalid price: {item}")
+                    continue
         
     return menu_items
 
@@ -165,5 +197,9 @@ def validate_menu_items(menu_items: List[Dict]) -> Tuple[bool, Optional[str]]:
                 return False, f"Item '{item.get('name')}' has invalid price: {price}"
         except (ValueError, TypeError):
             return False, f"Item '{item.get('name')}' has non-numeric price: {item.get('price')}"
+        
+        size = item.get("size")
+        if size is not None and not isinstance(size, str):
+            return False, f"Item '{item.get('name')}' has invalid size type: {type(size)}"
 
     return True, None

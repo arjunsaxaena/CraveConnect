@@ -31,7 +31,7 @@ func (r *MenuRepository) Create(ctx context.Context, menuItem *model.MenuItem) e
 	ib := sqlbuilder.NewInsertBuilder()
 	ib.InsertInto("menu_items")
 	ib.Cols(
-		"id", "restaurant_id", "name", "description", "price", "image_path",
+		"id", "restaurant_id", "name", "description", "price", "size", "image_path",
 		"is_active", "created_at", "updated_at",
 	)
 	ib.Values(
@@ -40,6 +40,7 @@ func (r *MenuRepository) Create(ctx context.Context, menuItem *model.MenuItem) e
 		menuItem.Name,
 		menuItem.Description,
 		menuItem.Price,
+		menuItem.Size,
 		menuItem.ImagePath,
 		menuItem.IsActive,
 		menuItem.CreatedAt,
@@ -54,7 +55,7 @@ func (r *MenuRepository) Create(ctx context.Context, menuItem *model.MenuItem) e
 func (r *MenuRepository) Get(ctx context.Context, id string, filters *model.GetMenuItemFilters) ([]*model.MenuItem, error) {
 	sb := sqlbuilder.NewSelectBuilder()
 	sb.Select(
-		"id", "restaurant_id", "name", "description", "price", "image_path",
+		"id", "restaurant_id", "name", "description", "price", "size", "image_path",
 		"is_active", "created_at", "updated_at",
 	)
 	sb.From("menu_items")
@@ -81,6 +82,9 @@ func (r *MenuRepository) Get(ctx context.Context, id string, filters *model.GetM
 		if filters.PriceMax != nil {
 			conditions = append(conditions, sb.LessEqualThan("price", *filters.PriceMax))
 		}
+		if filters.Size != nil {
+			conditions = append(conditions, sb.Equal("size", *filters.Size))
+		}
 		if filters.IsActive != nil {
 			conditions = append(conditions, sb.Equal("is_active", *filters.IsActive))
 		}
@@ -106,6 +110,7 @@ func (r *MenuRepository) Get(ctx context.Context, id string, filters *model.GetM
 			&menuItem.Name,
 			&menuItem.Description,
 			&menuItem.Price,
+			&menuItem.Size,
 			&menuItem.ImagePath,
 			&menuItem.IsActive,
 			&menuItem.CreatedAt,
@@ -134,6 +139,7 @@ func (r *MenuRepository) Update(ctx context.Context, menuItem *model.MenuItem) e
 		ub.Assign("name", menuItem.Name),
 		ub.Assign("description", menuItem.Description),
 		ub.Assign("price", menuItem.Price),
+		ub.Assign("size", menuItem.Size),
 		ub.Assign("image_path", menuItem.ImagePath),
 		ub.Assign("is_active", menuItem.IsActive),
 		ub.Assign("updated_at", menuItem.UpdatedAt),

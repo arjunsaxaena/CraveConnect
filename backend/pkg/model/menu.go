@@ -9,6 +9,7 @@ type MenuItem struct {
 	Name         string  `json:"name" db:"name" form:"name"`
 	Description  string  `json:"description" db:"description" form:"description"`
 	Price        float64 `json:"price" db:"price" form:"price"`
+	Size         string  `json:"size" db:"size" form:"size"`
 	ImagePath    string  `json:"image_path" db:"image_path" form:"image_path"`
 }
 
@@ -18,6 +19,7 @@ type GetMenuItemFilters struct {
 	Name         *string  `json:"name" db:"name"`
 	PriceMin     *float64 `json:"price_min" db:"price_min"`
 	PriceMax     *float64 `json:"price_max" db:"price_max"`
+	Size         *string  `json:"size" db:"size"`
 	IsActive     *bool    `json:"is_active" db:"is_active"`
 }
 

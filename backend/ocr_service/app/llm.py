@@ -43,7 +43,7 @@ def parse_menu_text(menu_text: str) -> List[Dict]:
         Extract menu items from this text, paying special attention to:
         1. Item name
         2. Description in parentheses
-        3. Price (usually appears at right side of each item, e.g. "90/-", "150/-")
+        3. Price variations by size (e.g., "Small: 90/-, Medium: 120/-, Large: 150/-")
         4. Category headers (like "COFFEES", "COLD BREWS", etc.)
 
         Here's the text from the menu:
@@ -53,14 +53,15 @@ def parse_menu_text(menu_text: str) -> List[Dict]:
         Format each item as a JSON object with:
         - name: Item name (string)
         - description: Description in parentheses if available, or null
-        - price: Price as a number only (remove "/-" suffix)
+        - price: If item has multiple sizes, provide a dictionary of size-price pairs. For single size items, provide the price as a number.
         - category: Category name if available (COFFEES, COLD BREWS, etc.)
 
-        For example:
-        [
-          {{"name": "Café Americano", "description": "Black Coffee", "price": 90, "category": "COFFEES"}},
-          {{"name": "Happiness", "description": "Cappuccino Prepared By Freshly Grounded Coffee Beans Imported From Malta", "price": 130, "category": "COFFEES"}}
-        ]
+        Examples:
+        Single size item:
+        {{"name": "Café Americano", "description": "Black Coffee", "price": 90, "category": "COFFEES"}}
+
+        Multiple sizes:
+        {{"name": "Cappuccino", "description": "Espresso with steamed milk", "price": {{"Small": 120, "Medium": 150, "Large": 180}}, "category": "COFFEES"}}
 
         Return a JSON array ONLY, with no other text or explanations.
         """
@@ -93,20 +94,21 @@ def parse_menu_image(image_data: bytes) -> List[Dict]:
         Pay close attention to:
         1. Item names (like "Café Americano", "Hazelnut Latte")
         2. Descriptions in parentheses (like "(Black Coffee)")
-        3. Prices (usually shown on the right, like "90/-", "140/-")
+        3. Price variations by size (e.g., "Small: 90/-, Medium: 120/-, Large: 150/-")
         4. Category headers (like "COFFEES", "COLD BREWS", "HOT BEVERAGES")
         
         Format as a JSON array with each item having:
         - name: Item name
         - description: Description text (or null if none)
-        - price: Price as a number only (remove "/-")
+        - price: For items with multiple sizes, provide a dictionary of size-price pairs. For single size items, provide the price as a number.
         - category: Category name the item belongs to
         
         Example expected format:
-        [
-          {"name": "Café Americano", "description": "Black Coffee", "price": 90, "category": "COFFEES"},
-          {"name": "Happiness", "description": "Cappuccino Prepared By Freshly Grounded Coffee Beans Imported From Malta", "price": 130, "category": "COFFEES"}
-        ]
+        Single size item:
+        {"name": "Café Americano", "description": "Black Coffee", "price": 90, "category": "COFFEES"}
+
+        Multiple sizes:
+        {"name": "Cappuccino", "description": "Espresso with steamed milk", "price": {"Small": 120, "Medium": 150, "Large": 180}, "category": "COFFEES"}
         
         Return ONLY the JSON array, no other text.
         """
