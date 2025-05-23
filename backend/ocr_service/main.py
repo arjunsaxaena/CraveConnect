@@ -2,7 +2,6 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.routes import router
 
-# Initialize FastAPI app
 app = FastAPI(title="OCR Service")
 
 # Configure CORS
@@ -14,7 +13,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routes
 app.include_router(router)
 
 if __name__ == "__main__":
