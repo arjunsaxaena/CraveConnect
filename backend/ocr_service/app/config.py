@@ -7,7 +7,14 @@ import google.generativeai as genai
 load_dotenv()
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler("ocr_service.log"),
+        logging.StreamHandler()
+    ]
+)
 logger = logging.getLogger(__name__)
 
 # API endpoints from environment
@@ -17,9 +24,24 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 # Configure Google AI
 genai.configure(api_key=GEMINI_API_KEY)
 
-# Update models to use currently available ones with better rate limits
-TEXT_MODEL = genai.GenerativeModel('gemini-1.5-flash')  # Changed from gemini-1.5-pro for better rate limits
-VISION_MODEL = genai.GenerativeModel('gemini-1.5-flash')  # Changed from deprecated gemini-pro-vision
+# Set up generation config for better results with menus
+generation_config = {
+    "temperature": 0.2,  # Lower temperature for more consistent results
+    "top_p": 0.95,
+    "top_k": 40,
+    "max_output_tokens": 8192,  # Allow for longer responses
+}
+
+# Update models
+TEXT_MODEL = genai.GenerativeModel(
+    'gemini-1.5-flash',
+    generation_config=generation_config
+)
+
+VISION_MODEL = genai.GenerativeModel(
+    'gemini-1.5-flash',  
+    generation_config=generation_config
+)
 
 # Optional model for embedding if needed
 EMBEDDING_MODEL = "models/embedding-001"

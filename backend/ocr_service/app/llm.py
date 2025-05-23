@@ -5,6 +5,10 @@ from app.config import logger, TEXT_MODEL, VISION_MODEL
 
 def extract_json_from_response(text: str) -> str:
     """Extract JSON from an LLM response that may contain markdown formatting."""
+    if not text:
+        logger.warning("Empty response from LLM")
+        return "[]"
+        
     json_str = text.strip()
     
     # Handle markdown code blocks
@@ -28,6 +32,10 @@ def extract_json_from_response(text: str) -> str:
     if not json_str.endswith("]"):
         json_str = json_str + "]"
         
+    # Check for empty array
+    if json_str.strip() == "[]":
+        logger.warning("Extracted empty JSON array")
+        
     logger.info(f"Extracted JSON: {json_str[:100]}...")
     return json_str
 
@@ -39,22 +47,31 @@ def parse_menu_text(menu_text: str) -> List[Dict]:
         
     try:
         prompt = f"""
-        You are a data extraction expert specializing in restaurant menus. Extract menu items from this text:
+        You are a data extraction expert specializing in restaurant menus. You're working with a cafe/restaurant menu that has categories like COFFEES, COLD BREWS, HOT BEVERAGES, etc.
+
+        Extract menu items from this text, paying special attention to:
+        1. Item name
+        2. Description in parentheses
+        3. Price (usually appears at right side of each item, e.g. "90/-", "150/-")
+        4. Category headers (like "COFFEES", "COLD BREWS", etc.)
+
+        Here's the text from the menu:
 
         {menu_text}
 
         Format each item as a JSON object with:
         - name: Item name (string)
-        - description: Item description if available, or null
-        - price: Price as a number only (no currency symbols)
-        - category: Category name if available, or null
-        - size: Size name if multiple sizes exist, or null
+        - description: Description in parentheses if available, or null
+        - price: Price as a number only (remove "/-" suffix)
+        - category: Category name if available (COFFEES, COLD BREWS, etc.)
 
-        Return a JSON array ONLY, with no other text, explanation, or markdown:
+        For example:
         [
-          {{"name": "Margherita", "description": "Classic cheese pizza", "price": 150, "category": "Hand Toasted Pizzas", "size": "8\""}},
-          {{"name": "C4 Margherita", "description": "Extra Cheese on Cheese", "price": 200, "category": "Hand Toasted Pizzas", "size": "8\""}}
+          {{"name": "Café Americano", "description": "Black Coffee", "price": 90, "category": "COFFEES"}},
+          {{"name": "Happiness", "description": "Cappuccino Prepared By Freshly Grounded Coffee Beans Imported From Malta", "price": 130, "category": "COFFEES"}}
         ]
+
+        Return a JSON array ONLY, with no other text or explanations.
         """
         
         # Updated code with retry logic
@@ -85,28 +102,28 @@ def parse_menu_text(menu_text: str) -> List[Dict]:
 def parse_menu_image(image_data: bytes) -> List[Dict]:
     """Direct extraction from image using Gemini Vision."""
     try:
-        image_parts = [
-            {
-                "mime_type": "image/jpeg",
-                "data": image_data
-            }
-        ]
-        
         prompt = """
-        Extract all menu items from this restaurant menu image.
+        You're analyzing a restaurant/cafe menu image. Extract ALL menu items with their details.
         
-        Return ONLY a JSON array with each item having these fields:
-        - name: Item name (string)
-        - description: Item description if available, or null
-        - price: Price as a number only (no currency symbols)
-        - category: Category name if available, or null
-        - size: Size name if multiple sizes exist, or null
+        Pay close attention to:
+        1. Item names (like "Café Americano", "Hazelnut Latte")
+        2. Descriptions in parentheses (like "(Black Coffee)")
+        3. Prices (usually shown on the right, like "90/-", "140/-")
+        4. Category headers (like "COFFEES", "COLD BREWS", "HOT BEVERAGES")
         
-        Example format:
+        Format as a JSON array with each item having:
+        - name: Item name
+        - description: Description text (or null if none)
+        - price: Price as a number only (remove "/-")
+        - category: Category name the item belongs to
+        
+        Example expected format:
         [
-          {"name": "Margherita", "description": "Classic cheese pizza", "price": 150, "category": "Hand Toasted Pizzas", "size": "8\""},
-          {"name": "C4 Margherita", "description": "Extra Cheese on Cheese", "price": 200, "category": "Hand Toasted Pizzas", "size": "8\""}
+          {"name": "Café Americano", "description": "Black Coffee", "price": 90, "category": "COFFEES"},
+          {"name": "Happiness", "description": "Cappuccino Prepared By Freshly Grounded Coffee Beans Imported From Malta", "price": 130, "category": "COFFEES"}
         ]
+        
+        Return ONLY the JSON array, no other text.
         """
         
         # Updated code with retry logic and proper parameter format for gemini-1.5-flash
