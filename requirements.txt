@@ -10,3 +10,4 @@ pydantic-settings
 python-dotenv
 json5
 opencv-python
+pgvector

@@ -1,13 +1,17 @@
 package controller
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 
 	"github.com/arjunsaxaena/CraveConnect.git/backend/menu_service/repository"
 	"github.com/arjunsaxaena/CraveConnect.git/backend/pkg/model"
 	"github.com/arjunsaxaena/CraveConnect.git/backend/pkg/utils"
 	"github.com/gin-gonic/gin"
+	"github.com/pgvector/pgvector-go"
 )
 
 type MenuController struct {
@@ -42,11 +46,86 @@ func (c *MenuController) CreateMenuItem(ctx *gin.Context) {
 		return
 	}
 
+	// Get embedding from the embedding service
+	embedding, err := c.getMenuItemEmbedding(menuItem)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to generate embedding: %v", err)})
+		return
+	}
+	menuItem.Embedding = embedding
+
 	if err := c.repo.Create(ctx, menuItem); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 	ctx.JSON(http.StatusCreated, menuItem)
+}
+
+// getMenuItemEmbedding calls the embedding service to generate an embedding for a menu item
+func (c *MenuController) getMenuItemEmbedding(menuItem *model.MenuItem) (*pgvector.Vector, error) {
+	// Prepare the request payload for the embedding service
+	type menuItemRequest struct {
+		ID           string  `json:"id,omitempty"`
+		Name         string  `json:"name"`
+		Description  string  `json:"description"`
+		Price        float64 `json:"price"`
+		Size         string  `json:"size"`
+		RestaurantId string  `json:"restaurant_id"`
+	}
+
+	// For new items, ID will be empty, so it will be omitted from the JSON
+	requestBody := struct {
+		MenuItem menuItemRequest `json:"menu_item"`
+	}{
+		MenuItem: menuItemRequest{
+			ID:           menuItem.Id,
+			Name:         menuItem.Name,
+			Description:  menuItem.Description,
+			Price:        menuItem.Price,
+			Size:         menuItem.Size,
+			RestaurantId: menuItem.RestaurantId,
+		},
+	}
+
+	jsonData, err := json.Marshal(requestBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal menu item: %w", err)
+	}
+
+	// Call the embedding service
+	resp, err := http.Post("http://localhost:8004/generate-embedding", 
+		"application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		return nil, fmt.Errorf("failed to call embedding service: %w", err)
+	}
+	defer resp.Body.Close()
+
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Parse the response
+	type embeddingResponse struct {
+		Success       bool     `json:"success"`
+		Embedding     []float32 `json:"embedding"`
+		FullEmbedding []float32 `json:"full_embedding"`
+		MenuItemID    string   `json:"menu_item_id"`
+		Error         string   `json:"error"`
+	}
+
+	var response embeddingResponse
+	if err := json.Unmarshal(respBody, &response); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response: %w", err)
+	}
+
+	if !response.Success {
+		return nil, fmt.Errorf("embedding service error: %s", response.Error)
+	}
+
+	// Use the full embedding instead of the truncated one
+	vec := pgvector.NewVector(response.FullEmbedding)
+	return &vec, nil
 }
 
 func (c *MenuController) GetMenuItems(ctx *gin.Context) {

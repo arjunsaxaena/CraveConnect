@@ -32,7 +32,7 @@ func (r *MenuRepository) Create(ctx context.Context, menuItem *model.MenuItem) e
 	ib.InsertInto("menu_items")
 	ib.Cols(
 		"id", "restaurant_id", "name", "description", "price", "size", "image_path",
-		"is_active", "created_at", "updated_at",
+		"is_active", "created_at", "updated_at", "embedding",
 	)
 	ib.Values(
 		menuItem.Id,
@@ -45,6 +45,7 @@ func (r *MenuRepository) Create(ctx context.Context, menuItem *model.MenuItem) e
 		menuItem.IsActive,
 		menuItem.CreatedAt,
 		menuItem.UpdatedAt,
+		menuItem.Embedding,
 	)
 	ib.SQL("RETURNING id")
 
@@ -56,7 +57,7 @@ func (r *MenuRepository) Get(ctx context.Context, id string, filters *model.GetM
 	sb := sqlbuilder.NewSelectBuilder()
 	sb.Select(
 		"id", "restaurant_id", "name", "description", "price", "size", "image_path",
-		"is_active", "created_at", "updated_at",
+		"is_active", "created_at", "updated_at", "embedding",
 	)
 	sb.From("menu_items")
 
@@ -115,6 +116,7 @@ func (r *MenuRepository) Get(ctx context.Context, id string, filters *model.GetM
 			&menuItem.IsActive,
 			&menuItem.CreatedAt,
 			&menuItem.UpdatedAt,
+			&menuItem.Embedding,
 		)
 		if err != nil {
 			return nil, err
@@ -143,6 +145,7 @@ func (r *MenuRepository) Update(ctx context.Context, menuItem *model.MenuItem) e
 		ub.Assign("image_path", menuItem.ImagePath),
 		ub.Assign("is_active", menuItem.IsActive),
 		ub.Assign("updated_at", menuItem.UpdatedAt),
+		ub.Assign("embedding", menuItem.Embedding),
 	)
 	ub.Where(ub.Equal("id", menuItem.Id))
 

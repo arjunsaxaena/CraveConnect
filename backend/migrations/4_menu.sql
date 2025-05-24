@@ -1,3 +1,5 @@
+CREATE EXTENSION IF NOT EXISTS vector;
+
 CREATE TABLE menu_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
@@ -6,6 +8,7 @@ CREATE TABLE menu_items (
     price DECIMAL(8,2) NOT NULL CHECK (price >= 0),
     size VARCHAR(255),
     image_path VARCHAR(255),
+    embedding vector(768),
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
