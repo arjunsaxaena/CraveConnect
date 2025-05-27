@@ -6,6 +6,7 @@ CREATE TABLE users (
     email TEXT UNIQUE,
     phone VARCHAR(15) UNIQUE,
     auth_provider TEXT CHECK (auth_provider IN ('google', 'phone')) NOT NULL,
+    meta JSONB DEFAULT '{}',
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP

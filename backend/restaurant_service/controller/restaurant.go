@@ -2,16 +2,27 @@ package controller
 
 import (
 	"bytes"
-	"fmt"
 	"io"
 	"mime/multipart"
 	"net/http"
+	"os"
 
 	"github.com/arjunsaxaena/CraveConnect.git/backend/pkg/model"
 	"github.com/arjunsaxaena/CraveConnect.git/backend/pkg/utils"
 	"github.com/arjunsaxaena/CraveConnect.git/backend/restaurant_service/repository"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
+
+var _ = godotenv.Load()
+
+var DATA_PIPELINE_SERVICE_URL = func() string {
+	url := os.Getenv("DATA_PIPELINE_SERVICE_URL")
+	if url == "" {
+		return "http://localhost:8003"
+	}
+	return url
+}()
 
 type RestaurantController struct {
 	repo *repository.RestaurantRepository
@@ -65,10 +76,78 @@ func (c *RestaurantController) CreateRestaurant(ctx *gin.Context) {
 		return
 	}
 
-	if err := c.processMenuWithOCR(restaurant.Id, menuFile); err != nil {
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	if err := writer.WriteField("restaurant_id", restaurant.Id); err != nil {
 		ctx.JSON(http.StatusCreated, gin.H{
 			"restaurant": restaurant,
 			"warning":    "Restaurant created but menu processing failed: " + err.Error(),
+		})
+		return
+	}
+
+	src, err := menuFile.Open()
+	if err != nil {
+		ctx.JSON(http.StatusCreated, gin.H{
+			"restaurant": restaurant,
+			"warning":    "Restaurant created but menu processing failed: " + err.Error(),
+		})
+		return
+	}
+	defer src.Close()
+
+	part, err := writer.CreateFormFile("menu_image", menuFile.Filename)
+	if err != nil {
+		ctx.JSON(http.StatusCreated, gin.H{
+			"restaurant": restaurant,
+			"warning":    "Restaurant created but menu processing failed: " + err.Error(),
+		})
+		return
+	}
+
+	if _, err = io.Copy(part, src); err != nil {
+		ctx.JSON(http.StatusCreated, gin.H{
+			"restaurant": restaurant,
+			"warning":    "Restaurant created but menu processing failed: " + err.Error(),
+		})
+		return
+	}
+
+	if err = writer.Close(); err != nil {
+		ctx.JSON(http.StatusCreated, gin.H{
+			"restaurant": restaurant,
+			"warning":    "Restaurant created but menu processing failed: " + err.Error(),
+		})
+		return
+	}
+
+	req, err := http.NewRequest("POST", DATA_PIPELINE_SERVICE_URL+"/process-menu", body)
+	if err != nil {
+		ctx.JSON(http.StatusCreated, gin.H{
+			"restaurant": restaurant,
+			"warning":    "Restaurant created but menu processing failed: " + err.Error(),
+		})
+		return
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		ctx.JSON(http.StatusCreated, gin.H{
+			"restaurant": restaurant,
+			"warning":    "Restaurant created but menu processing failed: " + err.Error(),
+		})
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		bodyBytes, _ := io.ReadAll(resp.Body)
+		ctx.JSON(http.StatusCreated, gin.H{
+			"restaurant": restaurant,
+			"warning":    "Data pipeline service returned error: " + string(bodyBytes),
 		})
 		return
 	}
@@ -153,24 +232,6 @@ func (c *RestaurantController) UpdateRestaurant(ctx *gin.Context) {
 		existingRestaurant.ImagePath = imagePath
 	}
 
-	menuFile, err := ctx.FormFile("menu_image")
-	if err == nil {
-		menuPath, err := utils.SaveMenuImage(menuFile)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save menu"})
-			return
-		}
-		existingRestaurant.MenuPath = menuPath
-
-		if err := c.processMenuWithOCR(existingRestaurant.Id, menuFile); err != nil {
-			ctx.JSON(http.StatusOK, gin.H{
-				"restaurant": existingRestaurant,
-				"warning":    "Restaurant updated but menu processing failed: " + err.Error(),
-			})
-			return
-		}
-	}
-
 	if err := model.ValidateRestaurant(existingRestaurant); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -190,52 +251,4 @@ func (c *RestaurantController) DeleteRestaurant(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{"message": "restaurant deleted"})
-}
-
-func (c *RestaurantController) processMenuWithOCR(restaurantID string, menuFile *multipart.FileHeader) error {
-	body := &bytes.Buffer{}
-	writer := multipart.NewWriter(body)
-
-	if err := writer.WriteField("restaurant_id", restaurantID); err != nil {
-		return err
-	}
-
-	src, err := menuFile.Open()
-	if err != nil {
-		return err
-	}
-	defer src.Close()
-
-	part, err := writer.CreateFormFile("menu_image", menuFile.Filename)
-	if err != nil {
-		return err
-	}
-
-	if _, err = io.Copy(part, src); err != nil {
-		return err
-	}
-
-	if err = writer.Close(); err != nil {
-		return err
-	}
-
-	req, err := http.NewRequest("POST", "http://localhost:8003/process-menu", body)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("OCR service returned error: %s", string(bodyBytes))
-	}
-
-	return nil
 }

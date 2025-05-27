@@ -1,1 +1,1 @@
-"""Embedding Service App Package""" 
+"""Data Pipeline Service using LangChain for OCR and embedding generation.""" 

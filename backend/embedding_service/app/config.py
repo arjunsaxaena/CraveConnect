@@ -2,24 +2,21 @@ import os
 import logging
 from dotenv import load_dotenv
 
-# Load environment variables
 load_dotenv()
 
-# API configuration
-MENU_SERVICE_URL = os.getenv("MENU_SERVICE_URL", "http://localhost:8002")
-
-# Model configuration
-GOOGLE_API_KEY = os.getenv("GEMINI_API_KEY")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "models/embedding-001")
-GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1"
-
-# Set up logging
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
 )
-logger = logging.getLogger("embedding-service")
+logger = logging.getLogger("data_pipeline_service")
 
-# Validate required environment variables
-if not GOOGLE_API_KEY:
-    logger.warning("GOOGLE_API_KEY not set. Embedding generation will fail.") 
+MENU_SERVICE_URL = os.environ.get("MENU_SERVICE_URL", "http://localhost:8002")
+
+OCR_ENABLED = os.environ.get("OCR_ENABLED", "true").lower() == "true"
+
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+LLM_MODEL = os.environ.get("LLM_MODEL", "gemini-1.5-flash")
+TEXT_MODEL = os.environ.get("TEXT_MODEL", "gemini-1.5-flash")
+
+EMBEDDING_MODEL = os.environ.get("EMBEDDING_MODEL", "models/embedding-001")
+OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "") 

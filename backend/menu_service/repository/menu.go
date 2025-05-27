@@ -31,7 +31,7 @@ func (r *MenuRepository) Create(ctx context.Context, menuItem *model.MenuItem) e
 	ib := sqlbuilder.NewInsertBuilder()
 	ib.InsertInto("menu_items")
 	ib.Cols(
-		"id", "restaurant_id", "name", "description", "price", "size", "image_path",
+		"id", "restaurant_id", "name", "description", "price", "size", "image_path", "meta",
 		"is_active", "created_at", "updated_at", "embedding",
 	)
 	ib.Values(
@@ -42,6 +42,7 @@ func (r *MenuRepository) Create(ctx context.Context, menuItem *model.MenuItem) e
 		menuItem.Price,
 		menuItem.Size,
 		menuItem.ImagePath,
+		menuItem.Meta,
 		menuItem.IsActive,
 		menuItem.CreatedAt,
 		menuItem.UpdatedAt,
@@ -56,7 +57,7 @@ func (r *MenuRepository) Create(ctx context.Context, menuItem *model.MenuItem) e
 func (r *MenuRepository) Get(ctx context.Context, id string, filters *model.GetMenuItemFilters) ([]*model.MenuItem, error) {
 	sb := sqlbuilder.NewSelectBuilder()
 	sb.Select(
-		"id", "restaurant_id", "name", "description", "price", "size", "image_path",
+		"id", "restaurant_id", "name", "description", "price", "size", "image_path", "meta",
 		"is_active", "created_at", "updated_at", "embedding",
 	)
 	sb.From("menu_items")
@@ -113,6 +114,7 @@ func (r *MenuRepository) Get(ctx context.Context, id string, filters *model.GetM
 			&menuItem.Price,
 			&menuItem.Size,
 			&menuItem.ImagePath,
+			&menuItem.Meta,
 			&menuItem.IsActive,
 			&menuItem.CreatedAt,
 			&menuItem.UpdatedAt,
@@ -143,6 +145,7 @@ func (r *MenuRepository) Update(ctx context.Context, menuItem *model.MenuItem) e
 		ub.Assign("price", menuItem.Price),
 		ub.Assign("size", menuItem.Size),
 		ub.Assign("image_path", menuItem.ImagePath),
+		ub.Assign("meta", menuItem.Meta),
 		ub.Assign("is_active", menuItem.IsActive),
 		ub.Assign("updated_at", menuItem.UpdatedAt),
 		ub.Assign("embedding", menuItem.Embedding),

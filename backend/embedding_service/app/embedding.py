@@ -1,85 +1,125 @@
-import requests
-from app.config import logger, GOOGLE_API_KEY, GEMINI_MODEL, GEMINI_API_URL
-import numpy as np
-from typing import List, Dict, Any, Optional, Union
+import google.generativeai as genai
+from langchain_google_genai import GoogleGenerativeAIEmbeddings
+from langchain.embeddings.base import Embeddings
+from typing import List, Dict, Any, Optional
+from backend.data_pipeline_service.app.config import logger, GEMINI_API_KEY, EMBEDDING_MODEL
+
+# Initialize Google Generative AI with API key
+genai.configure(api_key=GEMINI_API_KEY)
+
+# Initialize the embedding model
+embedding_model = None
+try:
+    if GEMINI_API_KEY:
+        embedding_model = GoogleGenerativeAIEmbeddings(
+            model=EMBEDDING_MODEL,
+            google_api_key=GEMINI_API_KEY,
+            credentials=None  # Explicitly disable ADC
+        )
+        logger.info(f"Embedding model initialized: {EMBEDDING_MODEL}")
+    else:
+        logger.warning("No Gemini API key provided. Embedding functionality will be disabled.")
+except Exception as e:
+    logger.error(f"Error initializing embedding model: {str(e)}")
+    import traceback
+    logger.error(traceback.format_exc())
 
 def generate_embedding(text: str) -> Optional[List[float]]:
     """
-    Generate an embedding vector for the given text using Google's Gemini API.
+    Generate embedding vector for a given text.
     
     Args:
-        text: The text to generate an embedding for
+        text: Text to generate embedding for
         
     Returns:
         List of floats representing the embedding vector or None if failed
     """
-    if not text or not text.strip():
-        logger.warning("Empty text provided for embedding generation")
-        return None
-    
     try:
-        # Clean and prepare text
-        text = text.strip()
-        
-        # Call Gemini embedding API
-        url = f"{GEMINI_API_URL}/{GEMINI_MODEL}:embedContent?key={GOOGLE_API_KEY}"
-        
-        payload = {
-            "model": GEMINI_MODEL,
-            "content": {
-                "parts": [
-                    {
-                        "text": text
-                    }
-                ]
-            }
-        }
-        
-        response = requests.post(url, json=payload)
-        response.raise_for_status()  # Raise an exception for HTTP errors
-        
-        # Extract the embedding vector
-        embedding_data = response.json()
-        embedding = embedding_data["embedding"]["values"]
-        
-        logger.info(f"Successfully generated embedding for text: {text[:50]}...")
-        return embedding
+        if not embedding_model:
+            logger.warning("Embedding model not initialized. Cannot generate embeddings.")
+            return None
+            
+        if not text or text.strip() == "":
+            logger.warning("Cannot generate embedding for empty text")
+            return None
+            
+        # Generate embedding using LangChain
+        try:
+            embedding = embedding_model.embed_query(text)
+            
+            if not embedding or len(embedding) == 0:
+                logger.warning("Embedding generation returned empty result")
+                return None
+                
+            # Ensure we have the correct format for pgvector
+            # pgvector expects a List[float] with proper float values
+            embedding = [float(val) for val in embedding]
+                
+            logger.info(f"Generated embedding with {len(embedding)} dimensions")
+            return embedding
+        except Exception as e:
+            logger.error(f"Error calling embedding model: {str(e)}")
+            import traceback
+            logger.error(traceback.format_exc())
+            return None
         
     except Exception as e:
         logger.error(f"Error generating embedding: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
         return None
 
 def generate_menu_item_embedding(menu_item: Dict[str, Any]) -> Optional[List[float]]:
     """
-    Generate an embedding for a menu item by combining its name, description, and other fields.
+    Generate embedding for a menu item.
     
     Args:
-        menu_item: Dictionary containing menu item details
+        menu_item: Dictionary containing menu item data
         
     Returns:
         List of floats representing the embedding vector or None if failed
     """
     try:
-        # Combine relevant fields into a single text
-        text_parts = []
-        
-        if "name" in menu_item and menu_item["name"]:
-            text_parts.append(f"Name: {menu_item['name']}")
-            
-        if "description" in menu_item and menu_item["description"]:
-            text_parts.append(f"Description: {menu_item['description']}")
-            
-        if "size" in menu_item and menu_item["size"]:
-            text_parts.append(f"Size: {menu_item['size']}")
-            
-        combined_text = " ".join(text_parts)
-        
-        if not combined_text:
-            logger.warning("No valid text found in menu item for embedding generation")
+        if not embedding_model:
+            logger.warning("Embedding model not initialized. Cannot generate menu item embedding.")
             return None
             
-        return generate_embedding(combined_text)
+        # Combine relevant fields for embedding
+        name = menu_item.get("name", "")
+        description = menu_item.get("description", "")
+        size = menu_item.get("size", "")
         
+        # Get category from meta if it exists
+        category = ""
+        if "meta" in menu_item and menu_item["meta"]:
+            try:
+                import json
+                meta_data = json.loads(menu_item["meta"])
+                category = meta_data.get("category", "")
+            except:
+                pass
+            
+        # Create combined text for embedding
+        combined_text = f"{name}. {description}"
+        if category:
+            combined_text += f". Category: {category}"
+        if size:
+            combined_text += f". Size: {size}"
+            
+        logger.info(f"Generating embedding for: {combined_text}")
+        
+        # Generate the embedding
+        embedding = generate_embedding(combined_text)
+        
+        if embedding:
+            logger.info(f"Successfully generated embedding for menu item: {name}")
+            return embedding
+        else:
+            logger.error(f"Failed to generate embedding for menu item: {name}")
+            return None
+            
     except Exception as e:
         logger.error(f"Error generating menu item embedding: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
         return None 

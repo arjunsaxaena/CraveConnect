@@ -1,6 +1,9 @@
 package model
 
-import "errors"
+import (
+	"encoding/json"
+	"errors"
+)
 
 type Restaurant struct {
 	Id        string `json:"id" db:"id" form:"id"`
@@ -8,6 +11,7 @@ type Restaurant struct {
 	IPerson
 	ImagePath string `json:"image_path" db:"image_path" form:"image_path"`
 	MenuPath  string `json:"menu_path" db:"menu_path" form:"menu_path"`
+	Meta      *json.RawMessage `json:"meta" db:"meta"`
 }
 
 type GetRestaurantFilters struct {

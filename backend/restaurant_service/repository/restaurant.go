@@ -31,7 +31,7 @@ func (r *RestaurantRepository) Create(ctx context.Context, restaurant *model.Res
 	ib := sqlbuilder.NewInsertBuilder()
 	ib.InsertInto("restaurants")
 	ib.Cols(
-		"id", "name", "email", "phone", "auth_provider", "image_path", "menu_path",
+		"id", "name", "email", "phone", "auth_provider", "image_path", "menu_path", "meta",
 		"is_active", "created_at", "updated_at",
 	)
 	ib.Values(
@@ -42,6 +42,7 @@ func (r *RestaurantRepository) Create(ctx context.Context, restaurant *model.Res
 		restaurant.AuthProvider,
 		restaurant.ImagePath,
 		restaurant.MenuPath,
+		restaurant.Meta,
 		restaurant.IsActive,
 		restaurant.CreatedAt,
 		restaurant.UpdatedAt,
@@ -55,7 +56,7 @@ func (r *RestaurantRepository) Create(ctx context.Context, restaurant *model.Res
 func (r *RestaurantRepository) Get(ctx context.Context, id string, filters *model.GetRestaurantFilters) ([]*model.Restaurant, error) {
 	sb := sqlbuilder.NewSelectBuilder()
 	sb.Select(
-		"id", "name", "email", "phone", "auth_provider", "image_path", "menu_path",
+		"id", "name", "email", "phone", "auth_provider", "image_path", "menu_path", "meta",
 		"is_active", "created_at", "updated_at",
 	)
 	sb.From("restaurants")
@@ -106,6 +107,7 @@ func (r *RestaurantRepository) Get(ctx context.Context, id string, filters *mode
 			&restaurant.AuthProvider,
 			&restaurant.ImagePath,
 			&restaurant.MenuPath,
+			&restaurant.Meta,
 			&restaurant.IsActive,
 			&restaurant.CreatedAt,
 			&restaurant.UpdatedAt,
@@ -135,6 +137,7 @@ func (r *RestaurantRepository) Update(ctx context.Context, restaurant *model.Res
 		ub.Assign("auth_provider", restaurant.AuthProvider),
 		ub.Assign("image_path", restaurant.ImagePath),
 		ub.Assign("menu_path", restaurant.MenuPath),
+		ub.Assign("meta", restaurant.Meta),
 		ub.Assign("is_active", restaurant.IsActive),
 		ub.Assign("updated_at", restaurant.UpdatedAt),
 	)

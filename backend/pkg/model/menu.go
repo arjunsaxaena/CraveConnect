@@ -1,6 +1,7 @@
 package model
 
 import (
+	"encoding/json"
 	"errors"
 
 	"github.com/pgvector/pgvector-go"
@@ -15,7 +16,8 @@ type MenuItem struct {
 	Price        float64          `json:"price" db:"price" form:"price"`
 	Size         string           `json:"size" db:"size" form:"size"`
 	ImagePath    string           `json:"image_path" db:"image_path" form:"image_path"`
-	Embedding    *pgvector.Vector `json:"-" db:"embedding"`
+	Embedding    *pgvector.Vector `json:"embedding" db:"embedding"`
+	Meta         *json.RawMessage `json:"meta" db:"meta"`
 }
 
 type GetMenuItemFilters struct {

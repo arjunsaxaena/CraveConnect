@@ -9,6 +9,7 @@ CREATE TABLE menu_items (
     size VARCHAR(255),
     image_path VARCHAR(255),
     embedding vector(768),
+    meta JSONB DEFAULT '{}',
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
