@@ -1,276 +1,210 @@
-import google.generativeai as genai
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.prompts import PromptTemplate
-from langchain.output_parsers import PydanticOutputParser
-from langchain.schema import HumanMessage, SystemMessage
-from langchain.schema.messages import AIMessage
-from typing import List, Dict, Any
+import json
 import base64
+from typing import List, Dict, Any, Optional
 from PIL import Image
 import io
-import json
-from backend.data_pipeline_service.app.config import logger, GEMINI_API_KEY, LLM_MODEL, TEXT_MODEL
+import google.generativeai as genai
+from langchain_google_genai import ChatGoogleGenerativeAI
+from app.config import logger, GEMINI_API_KEY, LLM_MODEL, GENERATION_CONFIG
 
-# Set up Google API key
+# Configure Google API
 genai.configure(api_key=GEMINI_API_KEY)
 
-# Initialize the models
+# Initialize models
 vision_model = None
 text_model = None
-try:
-    if GEMINI_API_KEY:
-        # For gemini-1.5-flash, we can use the same model for both text and vision
-        vision_model = ChatGoogleGenerativeAI(
-            model=LLM_MODEL, 
-            google_api_key=GEMINI_API_KEY,
-            convert_system_message_to_human=True,
-            credentials=None  # Explicitly disable ADC
-        )
-        text_model = ChatGoogleGenerativeAI(
-            model=TEXT_MODEL, 
-            google_api_key=GEMINI_API_KEY,
-            convert_system_message_to_human=True,
-            credentials=None  # Explicitly disable ADC
-        )
-        logger.info(f"LLM models initialized: {LLM_MODEL} for both text and vision")
-    else:
-        logger.warning("No Gemini API key provided. LLM functionality will be disabled.")
-except Exception as e:
-    logger.error(f"Error initializing LLM models: {str(e)}")
-    import traceback
-    logger.error(traceback.format_exc())
+
+if GEMINI_API_KEY:
+    try:
+        common_config = {
+            "google_api_key": GEMINI_API_KEY,
+            "convert_system_message_to_human": True,
+            "credentials": None,
+            "generation_config": GENERATION_CONFIG
+        }
+        
+        vision_model = ChatGoogleGenerativeAI(model=LLM_MODEL, **common_config)
+        text_model = ChatGoogleGenerativeAI(model=LLM_MODEL, **common_config)
+        
+        logger.info(f"LLM models initialized: {LLM_MODEL}")
+    except Exception as e:
+        logger.error(f"Error initializing LLM models: {str(e)}")
+else:
+    logger.warning("No Gemini API key provided. LLM functionality disabled.")
 
 def encode_image(image_data: bytes) -> str:
     """Encode image data as base64 string."""
     return base64.b64encode(image_data).decode('utf-8')
 
 def parse_menu_text(menu_text: str) -> List[Dict[str, Any]]:
-    """
-    Parse menu text using LangChain and Gemini model.
+    """Parse menu text and extract menu items for any type of menu."""
+    if not text_model or not menu_text.strip():
+        return []
+        
+    prompt = """
+    Extract all menu items from the following text. This could be any type of menu (food, beverages, etc.).
     
-    Returns:
-        List of dictionaries representing menu items
+    Return a JSON array of objects with these fields:
+    - name (required): item name
+    - price (required): numeric price (just the number, no currency symbols)
+    - description (optional): item description
+    - category (optional): menu category (e.g., "COFFEES", "HOT BEVERAGES", etc.)
+    - size (optional): portion size if applicable
+    
+    Example output format:
+    [
+      {
+        "name": "Café Americano",
+        "description": "Black Coffee",
+        "price": 90,
+        "category": "COFFEES"
+      },
+      {
+        "name": "Hot Chocolate",
+        "description": "Hershey's Cocoa Syrup Mixed With Warm Steamed Milk, Sprinkled With Chocolate Powder",
+        "price": 130,
+        "category": "HOT BEVERAGES"
+      }
+    ]
+    
+    Important: Use ONLY the text provided to extract information. Never include fake or additional menu items that aren't in the text.
+    For price, include only the numeric value without currency symbols.
+    
+    Text: {text}
+    
+    Return only valid JSON array, no additional text.
     """
+    
     try:
-        if not text_model:
-            logger.warning("Text model not initialized. Cannot parse menu text.")
-            return []
-            
-        system_message = SystemMessage(
-            content="""You are an expert at extracting menu items from text. 
-            Extract ALL menu items with their names, prices, sizes, and categories if available.
-            
-            For each menu item, extract:
-            1. Name (required)
-            2. Price in numeric format (required)
-            3. Size (if applicable, e.g. "Small", "Medium", "Large")
-            4. Description (optional)
-            
-            If multiple sizes are available for the same item, create separate entries for each size.
-            Format your response as a JSON array of menu items."""
-        )
+        response = text_model.invoke(prompt.format(text=menu_text))
+        content = response.content.strip()
         
-        user_message = HumanMessage(
-            content=f"""Extract all menu items from the following text:
+        # Clean response and parse JSON
+        if '```json' in content:
+            content = content.split('```json')[1]
+        if '```' in content:
+            content = content.split('```')[0]
             
-            {menu_text}
-            
-            Return ONLY a valid JSON array of menu items with name, price, size, description, and category fields.
-            Example format:
-            [
-                {{
-                    "name": "Margherita Pizza",
-                    "price": 12.99,
-                    "size": "Medium",
-                    "description": "Classic cheese pizza with tomato sauce",
-                    "category": "Pizza"
-                }},
-                {{
-                    "name": "Margherita Pizza",
-                    "price": 15.99,
-                    "size": "Large",
-                    "description": "Classic cheese pizza with tomato sauce",
-                    "category": "Pizza"
-                }},
-                ...
-            ]
-            """
-        )
+        content = content.strip()
+        logger.info(f"OCR response content (first 100 chars): {content[:100]}...")
         
-        messages = [system_message, user_message]
+        items = json.loads(content)
+        if isinstance(items, list):
+            logger.info(f"Successfully parsed {len(items)} menu items from OCR text")
+            return items
+        return []
         
-        try:
-            response = text_model.invoke(messages)
-            
-            # Extract JSON from the response
-            response_text = response.content
-            json_start = response_text.find('[')
-            json_end = response_text.rfind(']') + 1
-            
-            if json_start == -1 or json_end == 0:
-                logger.warning("No valid JSON found in LLM response")
-                return []
-                
-            json_str = response_text[json_start:json_end]
-            
-            try:
-                menu_items = json.loads(json_str)
-                logger.info(f"Successfully parsed {len(menu_items)} menu items from text")
-                return menu_items
-            except json.JSONDecodeError as e:
-                logger.error(f"JSON parsing error: {str(e)}")
-                return []
-        except Exception as e:
-            logger.error(f"Error invoking text model: {str(e)}")
-            return []
-            
     except Exception as e:
         logger.error(f"Error parsing menu text: {str(e)}")
-        import traceback
-        logger.error(traceback.format_exc())
+        logger.error(f"Failed JSON content (first 200 chars): {menu_text[:200]}...")
         return []
 
 def parse_menu_image(image_data: bytes) -> List[Dict[str, Any]]:
-    """
-    Parse menu items directly from an image using LangChain and Gemini model.
-    
-    Returns:
-        List of dictionaries representing menu items
-    """
-    try:
-        if not vision_model:
-            logger.warning("Vision model not initialized. Cannot parse menu image.")
-            return []
-            
-        # Prepare the image
-        image = Image.open(io.BytesIO(image_data))
+    """Parse menu image and extract menu items using vision model."""
+    if not vision_model:
+        return []
         
-        # Convert to RGB if image is in RGBA mode
+    try:
+        image = Image.open(io.BytesIO(image_data))
         if image.mode == 'RGBA':
             image = image.convert('RGB')
             
-        # Resize if image is too large
-        max_size = (1024, 1024)
-        if image.width > max_size[0] or image.height > max_size[1]:
-            image.thumbnail(max_size)
-            
-        # Convert back to bytes
-        buffer = io.BytesIO()
-        image.save(buffer, format="JPEG")
-        processed_image_data = buffer.getvalue()
+        # Convert image back to bytes
+        img_buffer = io.BytesIO()
+        image.save(img_buffer, format='JPEG')
+        processed_image_data = img_buffer.getvalue()
         
-        system_message = SystemMessage(
-            content="""You are an expert at extracting menu items from restaurant menu images.
-            Extract ALL menu items with their names, prices, sizes, and categories if available.
-            
-            For each menu item, extract:
-            1. Name (required)
-            2. Price in numeric format (required, remove currency symbols)
-            3. Size (if applicable, e.g. "Small", "Medium", "Large")
-            4. Description (optional)
-            5. Category (optional)
-            
-            If multiple sizes are available for the same item, create separate entries for each size.
-            Format your response as a JSON array of menu items."""
-        )
+        base64_image = encode_image(processed_image_data)
         
-        # Base64 encode the image for the API
-        image_b64 = encode_image(processed_image_data)
+        prompt = """
+        Analyze this menu image carefully and extract ALL menu items.
+
+        Return a JSON array of objects with these fields:
+        - name (required): item name (e.g., "Café Americano", "Hot Chocolate")
+        - price (required): numeric price only (just the number, no currency symbols)
+        - description (optional): full item description
+        - category (optional): menu section/category name (e.g., "COFFEES", "HOT BEVERAGES") 
+        - size (optional): size information if mentioned
         
-        user_message = HumanMessage(
-            content=[
-                {
-                    "type": "text",
-                    "text": """Extract all menu items from this menu image.
-                    Return ONLY a valid JSON array of menu items with name, price, size, description, and category fields.
-                    Example format:
-                    [
-                        {
-                            "name": "Margherita Pizza",
-                            "price": 12.99,
-                            "size": "Medium",
-                            "description": "Classic cheese pizza with tomato sauce",
-                            "category": "Pizza"
-                        },
-                        {
-                            "name": "Margherita Pizza",
-                            "price": 15.99,
-                            "size": "Large",
-                            "description": "Classic cheese pizza with tomato sauce",
-                            "category": "Pizza"
-                        },
-                        ...
-                    ]
-                    """
-                },
-                {
-                    "type": "image_url",
-                    "image_url": f"data:image/jpeg;base64,{image_b64}"
-                }
-            ]
-        )
+        Example output format:
+        [
+          {
+            "name": "Café Americano",
+            "description": "Black Coffee",
+            "price": 90,
+            "category": "COFFEES"
+          },
+          {
+            "name": "Hot Chocolate",
+            "description": "Hershey's Cocoa Syrup Mixed With Warm Steamed Milk",
+            "price": 130,
+            "category": "HOT BEVERAGES"
+          }
+        ]
         
-        messages = [system_message, user_message]
+        Important: Extract EVERY menu item visible in the image with its correct price.
+        Include items from ALL categories/sections.
+        Return only valid JSON array, no additional text.
+        """
         
-        try:
-            response = vision_model.invoke(messages)
-            
-            # Extract JSON from the response
-            response_text = response.content
-            json_start = response_text.find('[')
-            json_end = response_text.rfind(']') + 1
-            
-            if json_start == -1 or json_end == 0:
-                logger.warning("No valid JSON found in vision LLM response")
-                return []
-                
-            json_str = response_text[json_start:json_end]
-            
-            try:
-                menu_items = json.loads(json_str)
-                logger.info(f"Successfully parsed {len(menu_items)} menu items from image")
-                return menu_items
-            except json.JSONDecodeError as e:
-                logger.error(f"JSON parsing error from image: {str(e)}")
-                return []
-        except Exception as e:
-            logger.error(f"Error invoking vision model: {str(e)}")
-            return []
-            
+        # Create message with image
+        message_content = [
+            {"type": "text", "text": prompt},
+            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
+        ]
+        
+        response = vision_model.invoke([{"role": "user", "content": message_content}])
+        content = response.content.strip()
+        
+        # Clean and parse JSON response
+        if '```json' in content:
+            content = content.split('```json')[1]
+        if '```' in content:
+            content = content.split('```')[0]
+
+        content = content.strip()
+        logger.info(f"Vision response content (first 100 chars): {content[:100]}...")
+        
+        items = json.loads(content)
+        if isinstance(items, list):
+            logger.info(f"Successfully parsed {len(items)} menu items from image")
+            return items
+        return []
+        
     except Exception as e:
         logger.error(f"Error parsing menu image: {str(e)}")
-        import traceback
-        logger.error(traceback.format_exc())
+        # Add more debug information
+        if 'content' in locals():
+            logger.error(f"Failed JSON content (first 200 chars): {content[:200]}...")
         return []
 
 def merge_menu_items(vision_items: List[Dict[str, Any]], ocr_items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """
-    Merge menu items from vision and OCR extractions, removing duplicates.
-    
-    Returns:
-        Merged list of menu items
-    """
+    """Merge menu items from vision and OCR extractions, removing duplicates."""
     if not vision_items and not ocr_items:
         return []
-        
     if not vision_items:
-        return ocr_items
-        
+        return ocr_items or []
     if not ocr_items:
-        return vision_items
-        
-    # Create a set of item names to check for duplicates
-    merged_items = vision_items.copy()
-    vision_item_names = {item["name"].lower() for item in vision_items if item.get("name")}
+        return vision_items or []
     
-    # Add OCR items if they're not duplicates
+    # Create a key function to identify unique items based on name and size (if available)
+    def item_key(item):
+        name = item.get('name', '').lower()
+        size = item.get('size', '').lower()
+        return f"{name}__{size}" if size else name
+    
+    # Start with vision items
+    merged_items = vision_items.copy()
+    vision_item_keys = {item_key(item) for item in vision_items if item.get("name")}
+    
+    # Add unique OCR items
     for ocr_item in ocr_items:
         if not ocr_item.get("name"):
             continue
             
-        if ocr_item["name"].lower() not in vision_item_names:
+        if item_key(ocr_item) not in vision_item_keys:
             merged_items.append(ocr_item)
-            vision_item_names.add(ocr_item["name"].lower())
+            vision_item_keys.add(item_key(ocr_item))
     
     logger.info(f"Merged menu items: {len(vision_items)} vision + {len(ocr_items)} OCR = {len(merged_items)} total")
-    return merged_items 
+    return merged_items
