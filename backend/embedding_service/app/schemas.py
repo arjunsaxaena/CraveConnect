@@ -14,9 +14,18 @@ class MenuItem(BaseModel):
     embedding: Optional[List[float]] = None
 
 class MenuItemResponse(BaseModel):
+    name: str
+    price: Any
+    category: Optional[str] = None
+
+# Make sure this class exists and is properly defined
+class MenuImageProcessingResult(BaseModel):
+    image_name: str
     success: bool
     message: str
-    items: Optional[List[MenuItem]] = None
+    item_count: int = 0
+    items: List[Dict[str, Any]] = []
+    error: Optional[str] = None
 
 class MenuProcessingRequest(BaseModel):
     restaurant_id: str
@@ -25,8 +34,16 @@ class MenuProcessingRequest(BaseModel):
 class MenuProcessingResponse(BaseModel):
     success: bool
     message: str
-    item_count: Optional[int] = 0
-    items: Optional[List[Dict[str, Any]]] = None
+    item_count: int = 0
+    items: List[Dict[str, Any]] = []
+    error: Optional[str] = None
+
+class MenuProcessingBatchResponse(BaseModel):
+    success: bool
+    message: str
+    image_count: int
+    processed_count: int
+    results: List[MenuImageProcessingResult] = []
     error: Optional[str] = None
 
 class ExtractedMenuItem(BaseModel):

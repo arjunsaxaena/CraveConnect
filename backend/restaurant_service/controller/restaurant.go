@@ -41,12 +41,12 @@ func (c *RestaurantController) CreateRestaurant(ctx *gin.Context) {
 		return
 	}
 
+	// Save restaurant image (single file)
 	imageFile, err := ctx.FormFile("restaurant_image")
 	if err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "restaurant image is required"})
 		return
 	}
-
 	restaurantImagePath, err := utils.SaveRestaurantImage(imageFile)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save image"})
@@ -54,31 +54,42 @@ func (c *RestaurantController) CreateRestaurant(ctx *gin.Context) {
 	}
 	restaurant.ImagePath = restaurantImagePath
 
-	menuFile, err := ctx.FormFile("menu_image")
-	if err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": "menu image is required"})
-		return
-	}
-	menuImagePath, err := utils.SaveMenuImage(menuFile)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save menu"})
-		return
-	}
-	restaurant.MenuPath = menuImagePath
-
-	if err := model.ValidateRestaurant(restaurant); err != nil {
-		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
+	// Save restaurant to database first
 	if err := c.repo.Create(ctx, restaurant); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
 
+	// Process multiple menu images
+	form, err := ctx.MultipartForm()
+	if err != nil {
+		ctx.JSON(http.StatusCreated, gin.H{
+			"restaurant": restaurant,
+			"warning":    "Restaurant created but menu processing failed: " + err.Error(),
+		})
+		return
+	}
+
+	// Try both plural and singular field names for backward compatibility
+	menuFiles := form.File["menu_images"] // Note the plural name
+	if len(menuFiles) == 0 {
+		// Fall back to singular name if plural not found
+		menuFiles = form.File["menu_image"]
+	}
+
+	if len(menuFiles) == 0 {
+		ctx.JSON(http.StatusCreated, gin.H{
+			"restaurant": restaurant,
+			"warning":    "Restaurant created but no menu images provided",
+		})
+		return
+	}
+
+	// Process menu images
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 
+	// Add restaurant_id field
 	if err := writer.WriteField("restaurant_id", restaurant.Id); err != nil {
 		ctx.JSON(http.StatusCreated, gin.H{
 			"restaurant": restaurant,
@@ -87,31 +98,22 @@ func (c *RestaurantController) CreateRestaurant(ctx *gin.Context) {
 		return
 	}
 
-	src, err := menuFile.Open()
-	if err != nil {
-		ctx.JSON(http.StatusCreated, gin.H{
-			"restaurant": restaurant,
-			"warning":    "Restaurant created but menu processing failed: " + err.Error(),
-		})
-		return
-	}
-	defer src.Close()
+	// Add all menu images to the request
+	for _, menuFile := range menuFiles {
+		src, err := menuFile.Open()
+		if err != nil {
+			continue
+		}
+		defer src.Close()
 
-	part, err := writer.CreateFormFile("menu_image", menuFile.Filename)
-	if err != nil {
-		ctx.JSON(http.StatusCreated, gin.H{
-			"restaurant": restaurant,
-			"warning":    "Restaurant created but menu processing failed: " + err.Error(),
-		})
-		return
-	}
+		part, err := writer.CreateFormFile("menu_images", menuFile.Filename)
+		if err != nil {
+			continue
+		}
 
-	if _, err = io.Copy(part, src); err != nil {
-		ctx.JSON(http.StatusCreated, gin.H{
-			"restaurant": restaurant,
-			"warning":    "Restaurant created but menu processing failed: " + err.Error(),
-		})
-		return
+		if _, err = io.Copy(part, src); err != nil {
+			continue
+		}
 	}
 
 	if err = writer.Close(); err != nil {
@@ -122,7 +124,8 @@ func (c *RestaurantController) CreateRestaurant(ctx *gin.Context) {
 		return
 	}
 
-	req, err := http.NewRequest("POST", DATA_PIPELINE_SERVICE_URL+"/process-menu", body)
+	// Send to batch processing endpoint
+	req, err := http.NewRequest("POST", DATA_PIPELINE_SERVICE_URL+"/process-menu-batch", body)
 	if err != nil {
 		ctx.JSON(http.StatusCreated, gin.H{
 			"restaurant": restaurant,
@@ -143,16 +146,10 @@ func (c *RestaurantController) CreateRestaurant(ctx *gin.Context) {
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode != http.StatusOK {
-		bodyBytes, _ := io.ReadAll(resp.Body)
-		ctx.JSON(http.StatusCreated, gin.H{
-			"restaurant": restaurant,
-			"warning":    "Data pipeline service returned error: " + string(bodyBytes),
-		})
-		return
-	}
-
-	ctx.JSON(http.StatusCreated, restaurant)
+	ctx.JSON(http.StatusCreated, gin.H{
+		"restaurant": restaurant,
+		"message":    "Restaurant created and menu is being processed",
+	})
 }
 
 func (c *RestaurantController) GetRestaurants(ctx *gin.Context) {

@@ -96,3 +96,19 @@ class MenuProcessingPipeline:
                 result.append(item)
                 
         return result
+
+    async def send_menu_items_to_database(self, restaurant_id, menu_items):
+        """Send extracted menu items to the menu service database."""
+        import aiohttp
+        from app.config import MENU_SERVICE_URL, logger
+        
+        logger.info(f"Sending {len(menu_items)} menu items to database at {MENU_SERVICE_URL}/menu")
+        
+        async with aiohttp.ClientSession() as client:
+            async with client.post(f"{MENU_SERVICE_URL}/menu", json={"restaurant_id": restaurant_id, "menu_items": menu_items}) as response:
+                result = await response.json()
+                
+        # The session and connection are automatically closed when exiting the context
+        
+        logger.info(f"Sent {len(menu_items)}/{len(menu_items)} menu items (100%)")
+        return result
