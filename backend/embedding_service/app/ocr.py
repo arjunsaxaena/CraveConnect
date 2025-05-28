@@ -1,39 +1,52 @@
-import io
-import pytesseract
-from PIL import Image
-from langchain.tools import BaseTool
-from langchain.tools.base import ToolException
-from app.config import logger
+import base64
+import asyncio
+from typing import Optional
+import google.generativeai as genai
+from app.config import logger, GEMINI_API_KEY
 
-class OCRTool(BaseTool):
-    name: str = "menu_ocr_tool"
-    description: str = "Extract text from menu images"
-    
-    def _run(self, image_data: bytes) -> str:
-        """Extract text from an image using Tesseract OCR."""
+class OCRTool:
+    def __init__(self, api_key: Optional[str] = None):
+        self.vision_model = None
+        
+        if api_key:
+            try:
+                genai.configure(api_key=api_key)
+                self.vision_model = genai.GenerativeModel('gemini-1.5-flash')
+            except Exception as e:
+                logger.error(f"Error initializing Gemini vision model: {str(e)}")
+        
+    def run(self, image_data: bytes) -> str:
+        if not self.vision_model:
+            return ""
+            
         try:
-            image = Image.open(io.BytesIO(image_data))
+            image_parts = [{
+                "mime_type": "image/jpeg",
+                "data": base64.b64encode(image_data).decode('utf-8')
+            }]
             
-            if image.mode == 'RGBA':
-                image = image.convert('RGB')
+            prompt = "Extract and return all text content from this image of a menu. Only return the text content, nothing else."
+            
+            response = self.vision_model.generate_content(
+                contents=[{"role": "user", "parts": [{"text": prompt}, *image_parts]}]
+            )
+            
+            if response and response.text:
+                raw_text = response.text
+                logger.info(f"OCR extracted text length: {len(raw_text)} chars")
+                return raw_text
+            return ""
                 
-            text = pytesseract.image_to_string(image)
-            
-            if not text.strip():
-                logger.warning("OCR returned empty text")
-                return ""
-                
-            return text.strip()
-            
         except Exception as e:
-            logger.error(f"OCR extraction error: {str(e)}")
-            raise ToolException(f"OCR extraction failed: {str(e)}")
-    
-    async def _arun(self, image_data: bytes) -> str:
-        """Async version of text extraction."""
-        return self._run(image_data)
+            logger.error(f"Gemini OCR processing error: {str(e)}")
+            return ""
+            
+    async def arun(self, image_data: bytes) -> str:
+        return await asyncio.to_thread(self.run, image_data)
 
-def extract_text(image_data: bytes) -> str:
-    """Simple function to extract text from image data."""
-    ocr_tool = OCRTool()
-    return ocr_tool._run(image_data)
+# Initialize OCR tool
+ocr_tool = None
+try:
+    ocr_tool = OCRTool(api_key=GEMINI_API_KEY)
+except Exception as e:
+    logger.error(f"Error initializing OCR tool: {str(e)}")

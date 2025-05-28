@@ -1,12 +1,11 @@
 import google.generativeai as genai
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
+import asyncio
 from typing import List, Dict, Any, Optional
 from app.config import logger, GEMINI_API_KEY, EMBEDDING_MODEL
 
-# Initialize Google Generative AI
 genai.configure(api_key=GEMINI_API_KEY)
 
-# Initialize embedding model
 embedding_model = None
 if GEMINI_API_KEY:
     try:
@@ -15,48 +14,34 @@ if GEMINI_API_KEY:
             google_api_key=GEMINI_API_KEY,
             credentials=None
         )
-        logger.info(f"Embedding model initialized: {EMBEDDING_MODEL}")
     except Exception as e:
         logger.error(f"Error initializing embedding model: {str(e)}")
-        embedding_model = None
-else:
-    logger.warning("No Gemini API key provided. Embedding functionality disabled.")
 
-def generate_embedding(text: str) -> Optional[List[float]]:
-    """Generate embedding for given text."""
-    if not embedding_model or not text.strip():
+async def generate_embedding(text: str) -> Optional[List[float]]:
+    if not embedding_model:
         return None
         
     try:
-        embeddings = embedding_model.embed_documents([text])
-        return embeddings[0] if embeddings else None
+        return await asyncio.to_thread(embedding_model.embed_query, text)
     except Exception as e:
         logger.error(f"Error generating embedding: {str(e)}")
         return None
 
-def generate_menu_item_embedding(menu_item: Dict[str, Any]) -> Optional[List[float]]:
-    """Generate embedding for a menu item by combining its text fields."""
+async def generate_menu_item_embedding(item: Dict[str, Any]) -> List[float]:
     try:
-        name = menu_item.get("name", "").strip()
-        description = menu_item.get("description", "").strip()
-        size = menu_item.get("size", "").strip()
+        item_text = item.get("name", "")
         
-        if not name:
-            return None
+        if "size" in item and item["size"]:
+            item_text += f" {item['size']}"
             
-        # Combine text fields for embedding
-        text_parts = [name]
-        if description:
-            text_parts.append(description)
-        if size:
-            text_parts.append(f"Size: {size}")
+        if "description" in item and item["description"]:
+            item_text += f". {item['description']}"
             
-        combined_text = ". ".join(text_parts)
-        
-        embedding = generate_embedding(combined_text)
-        
-        return embedding
+        if "category" in item and item["category"]:
+            item_text += f". Category: {item['category']}"
+            
+        return await generate_embedding(item_text)
         
     except Exception as e:
-        logger.error(f"Error generating menu item embedding: {str(e)}")
-        return None
+        logger.error(f"Error generating embedding: {str(e)}")
+        return []

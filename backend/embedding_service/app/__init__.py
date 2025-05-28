@@ -1,1 +1,1 @@
-"""Data Pipeline Service using LangChain for OCR and embedding generation.""" 
+"""Data Pipeline Service"""

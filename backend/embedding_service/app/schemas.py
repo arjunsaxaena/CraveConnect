@@ -7,10 +7,11 @@ class MenuItem(BaseModel):
     name: str
     description: Optional[str] = ""
     price: float = Field(gt=0, description="Price must be greater than 0")
-    size: Optional[str] = ""
+    size: Optional[str] = ""  # Make sure this field exists
     image_path: Optional[str] = ""
     meta: Optional[str] = "{}"
     is_active: bool = True
+    embedding: Optional[List[float]] = None
 
 class MenuItemResponse(BaseModel):
     success: bool
