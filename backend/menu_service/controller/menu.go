@@ -27,14 +27,35 @@ func (c *MenuController) CreateMenuItem(ctx *gin.Context) {
 		return
 	}
 
-	imageFile, err := ctx.FormFile("item_image")
-	if err == nil {
-		itemImagePath, err := utils.SaveMenuItemImage(imageFile)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save image"})
-			return
+	if menuItem.MenuItemImageIds == nil {
+		menuItem.MenuItemImageIds = []string{}
+	}
+
+	form, err := ctx.MultipartForm()
+	if err == nil && form.File != nil {
+		if files, ok := form.File["item_images"]; ok {
+			for _, file := range files {
+				itemImagePath, err := utils.SaveMenuItemImage(file)
+				if err != nil {
+					ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save image"})
+					return
+				}
+
+				fileInfo, err := utils.CreateFileRecord(file, itemImagePath)
+				if err != nil {
+					ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid file data: " + err.Error()})
+					return
+				}
+
+				fileID, err := utils.SaveFileToFileService(fileInfo)
+				if err != nil {
+					ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save file metadata: " + err.Error()})
+					return
+				}
+
+				menuItem.MenuItemImageIds = append(menuItem.MenuItemImageIds, fileID)
+			}
 		}
-		menuItem.ImagePath = itemImagePath
 	}
 
 	if err := model.ValidateMenuItem(menuItem); err != nil {
@@ -131,14 +152,39 @@ func (c *MenuController) UpdateMenuItem(ctx *gin.Context) {
 		existingItem.RestaurantId = updateData.RestaurantId
 	}
 
-	imageFile, err := ctx.FormFile("item_image")
-	if err == nil {
-		imagePath, err := utils.SaveMenuItemImage(imageFile)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save image"})
-			return
+	if updateData.MenuItemImageIds != nil {
+		existingItem.MenuItemImageIds = updateData.MenuItemImageIds
+	}
+
+	form, err := ctx.MultipartForm()
+	if err == nil && form.File != nil {
+		if files, ok := form.File["item_images"]; ok {
+			for _, file := range files {
+				imagePath, err := utils.SaveMenuItemImage(file)
+				if err != nil {
+					ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save image"})
+					return
+				}
+
+				fileInfo, err := utils.CreateFileRecord(file, imagePath)
+				if err != nil {
+					ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid file data: " + err.Error()})
+					return
+				}
+
+				fileID, err := utils.SaveFileToFileService(fileInfo)
+				if err != nil {
+					ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save file metadata: " + err.Error()})
+					return
+				}
+
+				if existingItem.MenuItemImageIds == nil {
+					existingItem.MenuItemImageIds = []string{}
+				}
+
+				existingItem.MenuItemImageIds = append(existingItem.MenuItemImageIds, fileID)
+			}
 		}
-		existingItem.ImagePath = imagePath
 	}
 
 	if err := model.ValidateMenuItem(existingItem); err != nil {
@@ -160,4 +206,54 @@ func (c *MenuController) DeleteMenuItem(ctx *gin.Context) {
 		return
 	}
 	ctx.JSON(http.StatusOK, gin.H{"message": "menu item deleted"})
+}
+
+func (c *MenuController) RemoveMenuItemImage(ctx *gin.Context) {
+	menuItemId := ctx.Query("menu_item_id")
+	imageId := ctx.Query("image_id")
+
+	if menuItemId == "" || imageId == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "menu_item_id and image_id are required"})
+		return
+	}
+
+	items, err := c.repo.Get(ctx, menuItemId, nil)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to fetch menu item"})
+		return
+	}
+	if len(items) == 0 {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "menu item not found"})
+		return
+	}
+	menuItem := items[0]
+
+	found := false
+	updatedImageIds := []string{}
+	for _, id := range menuItem.MenuItemImageIds {
+		if id != imageId {
+			updatedImageIds = append(updatedImageIds, id)
+		} else {
+			found = true
+		}
+	}
+
+	if !found {
+		ctx.JSON(http.StatusNotFound, gin.H{"error": "image not found in menu item"})
+		return
+	}
+
+	err = utils.DeleteFileFromFileService(imageId)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to delete image: " + err.Error()})
+		return
+	}
+
+	menuItem.MenuItemImageIds = updatedImageIds
+	if err := c.repo.Update(ctx, menuItem); err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{"message": "image removed successfully"})
 }

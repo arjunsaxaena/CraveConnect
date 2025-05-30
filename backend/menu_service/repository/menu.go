@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 )
 
 type MenuRepository struct {
@@ -31,7 +32,7 @@ func (r *MenuRepository) Create(ctx context.Context, menuItem *model.MenuItem) e
 	ib := sqlbuilder.NewInsertBuilder()
 	ib.InsertInto("menu_items")
 	ib.Cols(
-		"id", "restaurant_id", "name", "description", "price", "size", "image_path", "meta",
+		"id", "restaurant_id", "name", "description", "price", "size", "menu_item_image_ids", "meta",
 		"is_active", "created_at", "updated_at", "embedding",
 	)
 	ib.Values(
@@ -41,7 +42,7 @@ func (r *MenuRepository) Create(ctx context.Context, menuItem *model.MenuItem) e
 		menuItem.Description,
 		menuItem.Price,
 		menuItem.Size,
-		menuItem.ImagePath,
+		pq.Array(menuItem.MenuItemImageIds),
 		menuItem.Meta,
 		menuItem.IsActive,
 		menuItem.CreatedAt,
@@ -57,7 +58,7 @@ func (r *MenuRepository) Create(ctx context.Context, menuItem *model.MenuItem) e
 func (r *MenuRepository) Get(ctx context.Context, id string, filters *model.GetMenuItemFilters) ([]*model.MenuItem, error) {
 	sb := sqlbuilder.NewSelectBuilder()
 	sb.Select(
-		"id", "restaurant_id", "name", "description", "price", "size", "image_path", "meta",
+		"id", "restaurant_id", "name", "description", "price", "size", "menu_item_image_ids", "meta",
 		"is_active", "created_at", "updated_at", "embedding",
 	)
 	sb.From("menu_items")
@@ -106,6 +107,7 @@ func (r *MenuRepository) Get(ctx context.Context, id string, filters *model.GetM
 	var menuItems []*model.MenuItem
 	for rows.Next() {
 		menuItem := &model.MenuItem{}
+		var menuItemImageIds pq.StringArray
 		err := rows.Scan(
 			&menuItem.Id,
 			&menuItem.RestaurantId,
@@ -113,7 +115,7 @@ func (r *MenuRepository) Get(ctx context.Context, id string, filters *model.GetM
 			&menuItem.Description,
 			&menuItem.Price,
 			&menuItem.Size,
-			&menuItem.ImagePath,
+			&menuItemImageIds,
 			&menuItem.Meta,
 			&menuItem.IsActive,
 			&menuItem.CreatedAt,
@@ -123,6 +125,7 @@ func (r *MenuRepository) Get(ctx context.Context, id string, filters *model.GetM
 		if err != nil {
 			return nil, err
 		}
+		menuItem.MenuItemImageIds = []string(menuItemImageIds)
 		menuItems = append(menuItems, menuItem)
 	}
 
@@ -144,7 +147,7 @@ func (r *MenuRepository) Update(ctx context.Context, menuItem *model.MenuItem) e
 		ub.Assign("description", menuItem.Description),
 		ub.Assign("price", menuItem.Price),
 		ub.Assign("size", menuItem.Size),
-		ub.Assign("image_path", menuItem.ImagePath),
+		ub.Assign("menu_item_image_ids", pq.Array(menuItem.MenuItemImageIds)),
 		ub.Assign("meta", menuItem.Meta),
 		ub.Assign("is_active", menuItem.IsActive),
 		ub.Assign("updated_at", menuItem.UpdatedAt),

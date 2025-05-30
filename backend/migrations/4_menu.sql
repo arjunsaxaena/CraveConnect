@@ -1,5 +1,3 @@
-CREATE EXTENSION IF NOT EXISTS vector;
-
 CREATE TABLE menu_items (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
@@ -7,7 +5,7 @@ CREATE TABLE menu_items (
     description TEXT,
     price DECIMAL(8,2) NOT NULL CHECK (price >= 0),
     size VARCHAR(255),
-    image_path VARCHAR(255),
+    menu_item_image_ids UUID[] DEFAULT '{}',
     embedding vector(768),
     meta JSONB DEFAULT '{}',
     is_active BOOLEAN DEFAULT TRUE,

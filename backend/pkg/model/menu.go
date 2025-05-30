@@ -10,14 +10,14 @@ import (
 type MenuItem struct {
 	Id           string           `json:"id" db:"id" form:"id"`
 	BaseEntity
-	RestaurantId string           `json:"restaurant_id" db:"restaurant_id" form:"restaurant_id"`
-	Name         string           `json:"name" db:"name" form:"name"`
-	Description  string           `json:"description" db:"description" form:"description"`
-	Price        float64          `json:"price" db:"price" form:"price"`
-	Size         string           `json:"size" db:"size" form:"size"`
-	ImagePath    string           `json:"image_path" db:"image_path" form:"image_path"`
-	Embedding    *pgvector.Vector `json:"embedding" db:"embedding"`
-	Meta         *json.RawMessage `json:"meta" db:"meta"`
+	RestaurantId    string           `json:"restaurant_id" db:"restaurant_id" form:"restaurant_id"`
+	Name            string           `json:"name" db:"name" form:"name"`
+	Description     string           `json:"description" db:"description" form:"description"`
+	Price           float64          `json:"price" db:"price" form:"price"`
+	Size            string           `json:"size" db:"size" form:"size"`
+	MenuItemImageIds []string        `json:"menu_item_image_ids" db:"menu_item_image_ids" form:"menu_item_image_ids"`
+	Embedding       *pgvector.Vector `json:"embedding" db:"embedding"`
+	Meta            *json.RawMessage `json:"meta" db:"meta"`
 }
 
 type GetMenuItemFilters struct {

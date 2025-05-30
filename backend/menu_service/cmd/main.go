@@ -22,6 +22,7 @@ func main() {
 		menuRoutes.GET("", menuController.GetMenuItems)
 		menuRoutes.PATCH("", menuController.UpdateMenuItem)
 		menuRoutes.DELETE("/:id", menuController.DeleteMenuItem)
+		menuRoutes.DELETE("/image", menuController.RemoveMenuItemImage) // for when deleting an existing image
 	}
 
 	log.Println("Starting menu service on port 8002...")
