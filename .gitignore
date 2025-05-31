@@ -32,3 +32,4 @@ ocr_debug_output.txt/
 ocr_service.log/
 __pycache__/
 *.py[cod]
+node_modules/
