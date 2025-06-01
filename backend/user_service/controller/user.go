@@ -11,11 +11,13 @@ import (
 
 type UserController struct {
 	repo *repository.UserRepository
+	userAddressRepo *repository.UserAddressRepository
 }
 
 func NewUserController() *UserController {
 	return &UserController{
 		repo: repository.NewUserRepository(),
+		userAddressRepo: repository.NewUserAddressRepository(),
 	}
 }
 
@@ -31,6 +33,18 @@ func (c *UserController) CreateUser(ctx *gin.Context) {
 		return
 	}
 
+	if user.DefaultAddressId != nil {
+		userAddresses, err := c.userAddressRepo.Get(ctx, *user.DefaultAddressId, nil)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		if len(userAddresses) == 0 {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Default address id does not exist"})
+			return
+		}
+	}
+	
 	if err := c.repo.Create(ctx, user); err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -43,6 +57,9 @@ func (c *UserController) GetUsers(ctx *gin.Context) {
 	filters := &model.GetUserFilters{}
 	if id := ctx.Query("id"); id != "" {
 		filters.Id = &id
+	}
+	if name := ctx.Query("name"); name != "" {
+		filters.Name = &name
 	}
 	if email := ctx.Query("email"); email != "" {
 		filters.Email = &email
@@ -81,6 +98,18 @@ func (c *UserController) UpdateUser(ctx *gin.Context) {
 	if len(existingUsers) == 0 {
 		ctx.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
 		return
+	}
+
+	if existingUsers[0].DefaultAddressId != nil {
+		userAddresses, err := c.userAddressRepo.Get(ctx, *existingUsers[0].DefaultAddressId, nil)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		if len(userAddresses) == 0 {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Default address id does not exist"})
+			return
+		}
 	}
 
 	user := existingUsers[0]

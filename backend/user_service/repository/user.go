@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 )
 
 type UserRepository struct {
@@ -32,8 +33,23 @@ func (r *UserRepository) Create(ctx context.Context, user *model.User) error {
 	ib.InsertInto("users")
 	ib.Cols(
 		"id", "name", "email", "phone", "auth_provider", "meta",
+		"preference_tags", "dietary_restrictions", "default_address_id",
 		"is_active", "created_at", "updated_at",
 	)
+	
+	var preferenceTags, dietaryRestrictions interface{}
+	if user.PreferenceTags != nil {
+		preferenceTags = pq.Array(*user.PreferenceTags)
+	} else {
+		preferenceTags = pq.Array([]string{})
+	}
+	
+	if user.DietaryRestrictions != nil {
+		dietaryRestrictions = pq.Array(*user.DietaryRestrictions)
+	} else {
+		dietaryRestrictions = pq.Array([]string{})
+	}
+	
 	ib.Values(
 		user.Id,
 		user.Name,
@@ -41,6 +57,9 @@ func (r *UserRepository) Create(ctx context.Context, user *model.User) error {
 		user.Phone,
 		user.AuthProvider,
 		user.Meta,
+		preferenceTags,
+		dietaryRestrictions,
+		user.DefaultAddressId,
 		user.IsActive,
 		user.CreatedAt,
 		user.UpdatedAt,
@@ -55,6 +74,7 @@ func (r *UserRepository) Get(ctx context.Context, id string, filters *model.GetU
 	sb := sqlbuilder.NewSelectBuilder()
 	sb.Select(
 		"id", "name", "email", "phone", "auth_provider", "meta",
+		"preference_tags", "dietary_restrictions", "default_address_id",
 		"is_active", "created_at", "updated_at",
 	)
 	sb.From("users")
@@ -66,6 +86,12 @@ func (r *UserRepository) Get(ctx context.Context, id string, filters *model.GetU
 	}
 
 	if filters != nil {
+		if filters.Id != nil {
+			conditions = append(conditions, sb.Equal("id", *filters.Id))
+		}
+		if filters.Name != nil {
+			conditions = append(conditions, sb.Equal("name", *filters.Name))
+		}
 		if filters.Email != nil {
 			conditions = append(conditions, sb.Equal("email", *filters.Email))
 		}
@@ -94,6 +120,8 @@ func (r *UserRepository) Get(ctx context.Context, id string, filters *model.GetU
 	var users []*model.User
 	for rows.Next() {
 		user := &model.User{}
+		var preferenceTags, dietaryRestrictions []string
+		
 		err := rows.Scan(
 			&user.Id,
 			&user.Name,
@@ -101,6 +129,9 @@ func (r *UserRepository) Get(ctx context.Context, id string, filters *model.GetU
 			&user.Phone,
 			&user.AuthProvider,
 			&user.Meta,
+			pq.Array(&preferenceTags),
+			pq.Array(&dietaryRestrictions),
+			&user.DefaultAddressId,
 			&user.IsActive,
 			&user.CreatedAt,
 			&user.UpdatedAt,
@@ -108,6 +139,10 @@ func (r *UserRepository) Get(ctx context.Context, id string, filters *model.GetU
 		if err != nil {
 			return nil, err
 		}
+		
+		user.PreferenceTags = &preferenceTags
+		user.DietaryRestrictions = &dietaryRestrictions
+		
 		users = append(users, user)
 	}
 
@@ -123,12 +158,29 @@ func (r *UserRepository) Update(ctx context.Context, user *model.User) error {
 
 	ub := sqlbuilder.NewUpdateBuilder()
 	ub.Update("users")
+	
+	var preferenceTags, dietaryRestrictions interface{}
+	if user.PreferenceTags != nil {
+		preferenceTags = pq.Array(*user.PreferenceTags)
+	} else {
+		preferenceTags = pq.Array([]string{})
+	}
+	
+	if user.DietaryRestrictions != nil {
+		dietaryRestrictions = pq.Array(*user.DietaryRestrictions)
+	} else {
+		dietaryRestrictions = pq.Array([]string{})
+	}
+	
 	ub.Set(
 		ub.Assign("name", user.Name),
 		ub.Assign("email", user.Email),
 		ub.Assign("phone", user.Phone),
 		ub.Assign("auth_provider", user.AuthProvider),
 		ub.Assign("meta", user.Meta),
+		ub.Assign("preference_tags", preferenceTags),
+		ub.Assign("dietary_restrictions", dietaryRestrictions),
+		ub.Assign("default_address_id", user.DefaultAddressId),
 		ub.Assign("is_active", user.IsActive),
 		ub.Assign("updated_at", user.UpdatedAt),
 	)
