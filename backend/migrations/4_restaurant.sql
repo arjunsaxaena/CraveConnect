@@ -15,17 +15,8 @@ CREATE TABLE restaurants (
     preparation_time_min INT DEFAULT 30,
     operating_hours JSONB NOT NULL,
     location GEOGRAPHY(POINT,4326) NOT NULL,
-    is_verified BOOLEAN DEFAULT FALSE,
+    menu JSONB DEFAULT '{}',
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
-CREATE TABLE restaurant_images (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
-    image_url TEXT NOT NULL,
-    caption TEXT,
-    is_primary BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
