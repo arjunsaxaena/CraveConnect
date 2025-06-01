@@ -1,8 +1,7 @@
 CREATE TYPE file_purpose AS ENUM (
-    'restaurant_primary',
-    'restaurant_gallery',
-    'menu_item',
-    'user_avatar',
+    'restaurant_image',
+    'menu_image',
+    'menu_item_image',
     'review_photo'
 );
 

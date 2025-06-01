@@ -13,6 +13,7 @@ const (
 	RestaurantImagesDir = "../uploads/restaurant_images"
 	MenuImagesDir       = "../uploads/menu_images"
 	MenuItemImagesDir   = "../uploads/menu_item_images"
+	ReviewPhotosDir     = "../uploads/review_photos"
 )
 
 func SaveFile(file *multipart.FileHeader, directory string) (string, error) {
@@ -56,4 +57,8 @@ func SaveMenuImage(file *multipart.FileHeader) (string, error) {
 }
 func SaveMenuItemImage(file *multipart.FileHeader) (string, error) {
 	return SaveFile(file, MenuItemImagesDir)
+}
+
+func SaveReviewPhoto(file *multipart.FileHeader) (string, error) {
+	return SaveFile(file, ReviewPhotosDir)
 }
