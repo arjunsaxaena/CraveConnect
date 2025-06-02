@@ -24,8 +24,8 @@ func main() {
 		restaurantRoutes.DELETE("/:id", restaurantController.DeleteRestaurant)
 	}
 
-	log.Println("Starting restaurant service on port 8001...")
-	if err := router.Run(":8001"); err != nil {
+	log.Println("Starting restaurant service on port 8003...")
+	if err := router.Run(":8003"); err != nil {
 		log.Fatalf("Failed to start server: %v", err)
 	}
-} 
+}

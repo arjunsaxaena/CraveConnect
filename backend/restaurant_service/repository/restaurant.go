@@ -10,6 +10,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/huandu/go-sqlbuilder"
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 )
 
 type RestaurantRepository struct {
@@ -31,17 +32,23 @@ func (r *RestaurantRepository) Create(ctx context.Context, restaurant *model.Res
 	ib := sqlbuilder.NewInsertBuilder()
 	ib.InsertInto("restaurants")
 	ib.Cols(
-		"id", "name", "email", "phone", "auth_provider", "image_path", "menu_path", "meta",
-		"is_active", "created_at", "updated_at",
+		"id", "name", "owner_id", "description", "cuisine_types",
+		"rating", "delivery_radius_km",
+		"min_order_amount", "delivery_fee", "operating_hours",
+		"location", "meta", "is_active", "created_at", "updated_at",
 	)
 	ib.Values(
 		restaurant.Id,
 		restaurant.Name,
-		restaurant.Email,
-		restaurant.Phone,
-		restaurant.AuthProvider,
-		restaurant.ImagePath,
-		restaurant.MenuPath,
+		restaurant.OwnerId,
+		restaurant.Description,
+		pq.Array(restaurant.CuisineTypes),
+		restaurant.Rating,
+		restaurant.DeliveryRadiusKm,
+		restaurant.MinOrderAmount,
+		restaurant.DeliveryFee,
+		restaurant.OperatingHours,
+		restaurant.Location,
 		restaurant.Meta,
 		restaurant.IsActive,
 		restaurant.CreatedAt,
@@ -56,11 +63,13 @@ func (r *RestaurantRepository) Create(ctx context.Context, restaurant *model.Res
 func (r *RestaurantRepository) Get(ctx context.Context, id string, filters *model.GetRestaurantFilters) ([]*model.Restaurant, error) {
 	sb := sqlbuilder.NewSelectBuilder()
 	sb.Select(
-		"id", "name", "email", "phone", "auth_provider", "image_path", "menu_path", "meta",
-		"is_active", "created_at", "updated_at",
+		"id", "name", "owner_id", "description", "cuisine_types",
+		"rating", "delivery_radius_km",
+		"min_order_amount", "delivery_fee", "operating_hours",
+		"location", "meta", "is_active", "created_at", "updated_at",
 	)
 	sb.From("restaurants")
-	
+
 	conditions := []string{}
 
 	if id != "" {
@@ -71,14 +80,17 @@ func (r *RestaurantRepository) Get(ctx context.Context, id string, filters *mode
 		if filters.Name != nil {
 			conditions = append(conditions, sb.Equal("name", *filters.Name))
 		}
-		if filters.Email != nil {
-			conditions = append(conditions, sb.Equal("email", *filters.Email))
+		if filters.OwnerId != nil {
+			conditions = append(conditions, sb.Equal("owner_id", *filters.OwnerId))
 		}
-		if filters.Phone != nil {
-			conditions = append(conditions, sb.Equal("phone", *filters.Phone))
+		if filters.CuisineTypes != nil {
+			conditions = append(conditions, sb.Equal("cuisine_types", *filters.CuisineTypes))
 		}
-		if filters.AuthProvider != nil {
-			conditions = append(conditions, sb.Equal("auth_provider", *filters.AuthProvider))
+		if filters.MinRating != nil {
+			conditions = append(conditions, sb.GE("rating", *filters.MinRating))
+		}
+		if filters.MaxDeliveryFee != nil {
+			conditions = append(conditions, sb.LE("delivery_fee", *filters.MaxDeliveryFee))
 		}
 		if filters.IsActive != nil {
 			conditions = append(conditions, sb.Equal("is_active", *filters.IsActive))
@@ -99,14 +111,19 @@ func (r *RestaurantRepository) Get(ctx context.Context, id string, filters *mode
 	var restaurants []*model.Restaurant
 	for rows.Next() {
 		restaurant := &model.Restaurant{}
+		var cuisineTypesArray []string
 		err := rows.Scan(
 			&restaurant.Id,
 			&restaurant.Name,
-			&restaurant.Email,
-			&restaurant.Phone,
-			&restaurant.AuthProvider,
-			&restaurant.ImagePath,
-			&restaurant.MenuPath,
+			&restaurant.OwnerId,
+			&restaurant.Description,
+			pq.Array(&cuisineTypesArray),
+			&restaurant.Rating,
+			&restaurant.DeliveryRadiusKm,
+			&restaurant.MinOrderAmount,
+			&restaurant.DeliveryFee,
+			&restaurant.OperatingHours,
+			&restaurant.Location,
 			&restaurant.Meta,
 			&restaurant.IsActive,
 			&restaurant.CreatedAt,
@@ -115,6 +132,8 @@ func (r *RestaurantRepository) Get(ctx context.Context, id string, filters *mode
 		if err != nil {
 			return nil, err
 		}
+		restaurant.CuisineTypes = cuisineTypesArray
+
 		restaurants = append(restaurants, restaurant)
 	}
 
@@ -132,11 +151,14 @@ func (r *RestaurantRepository) Update(ctx context.Context, restaurant *model.Res
 	ub.Update("restaurants")
 	ub.Set(
 		ub.Assign("name", restaurant.Name),
-		ub.Assign("email", restaurant.Email),
-		ub.Assign("phone", restaurant.Phone),
-		ub.Assign("auth_provider", restaurant.AuthProvider),
-		ub.Assign("image_path", restaurant.ImagePath),
-		ub.Assign("menu_path", restaurant.MenuPath),
+		ub.Assign("owner_id", restaurant.OwnerId),
+		ub.Assign("description", restaurant.Description),
+		ub.Assign("cuisine_types", pq.Array(restaurant.CuisineTypes)),
+		ub.Assign("rating", restaurant.Rating),
+		ub.Assign("delivery_radius_km", restaurant.DeliveryRadiusKm),
+		ub.Assign("min_order_amount", restaurant.MinOrderAmount),
+		ub.Assign("delivery_fee", restaurant.DeliveryFee),
+		ub.Assign("operating_hours", restaurant.OperatingHours),
 		ub.Assign("meta", restaurant.Meta),
 		ub.Assign("is_active", restaurant.IsActive),
 		ub.Assign("updated_at", restaurant.UpdatedAt),
