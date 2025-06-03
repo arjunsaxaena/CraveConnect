@@ -3,6 +3,8 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/arjunsaxaena/CraveConnect.git/backend/pkg/database"
@@ -31,8 +33,8 @@ func (r *MenuRepository) Create(ctx context.Context, menuItem *model.MenuItem) e
 	ib.InsertInto("menu_items")
 	ib.Cols(
 		"id", "restaurant_id", "category_id", "name", "description", "ingredients", 
-		"nutritional_info", "price", "is_spicy", "is_vegetarian", "is_available", 
-		"popularity_score", "sizes", "meta", "created_at", "updated_at", "embedding",
+		"nutritional_info", "prices", "is_spicy", "is_vegetarian", "is_available", 
+		"popularity_score", "meta", "created_at", "updated_at", "embedding",
 	)
 	ib.Values(
 		menuItem.Id,
@@ -42,12 +44,11 @@ func (r *MenuRepository) Create(ctx context.Context, menuItem *model.MenuItem) e
 		menuItem.Description,
 		menuItem.Ingredients,
 		menuItem.NutritionalInfo,
-		menuItem.Price,
+		menuItem.Prices,
 		menuItem.IsSpicy,
 		menuItem.IsVegetarian,
 		menuItem.IsAvailable,
 		menuItem.PopularityScore,
-		menuItem.Sizes,
 		menuItem.Meta,
 		menuItem.CreatedAt,
 		menuItem.UpdatedAt,
@@ -63,8 +64,8 @@ func (r *MenuRepository) Get(ctx context.Context, id string, filters *model.GetM
 	sb := sqlbuilder.NewSelectBuilder()
 	sb.Select(
 		"id", "restaurant_id", "category_id", "name", "description", "ingredients", 
-		"nutritional_info", "price", "is_spicy", "is_vegetarian", "is_available", 
-		"popularity_score", "sizes", "meta", "created_at", "updated_at", "embedding",
+		"nutritional_info", "prices", "is_spicy", "is_vegetarian", "is_available", 
+		"popularity_score", "meta", "created_at", "updated_at", "embedding",
 	)
 	sb.From("menu_items")
 
@@ -87,11 +88,19 @@ func (r *MenuRepository) Get(ctx context.Context, id string, filters *model.GetM
 		if filters.Name != nil {
 			conditions = append(conditions, sb.Like("name", "%"+*filters.Name+"%"))
 		}
+		if filters.Prices != nil {
+			var pricesMap map[string]float64
+			if err := json.Unmarshal(*filters.Prices, &pricesMap); err == nil {
+				for size, price := range pricesMap {
+					conditions = append(conditions, fmt.Sprintf("(prices->>'%s')::float = %f", size, price))
+				}
+			}
+		}
 		if filters.PriceMin != nil {
-			conditions = append(conditions, sb.GreaterEqualThan("price", *filters.PriceMin))
+			conditions = append(conditions, fmt.Sprintf("EXISTS (SELECT 1 FROM jsonb_each_text(prices) WHERE (value)::float >= %f)", *filters.PriceMin)) // What The Fuck idk
 		}
 		if filters.PriceMax != nil {
-			conditions = append(conditions, sb.LessEqualThan("price", *filters.PriceMax))
+			conditions = append(conditions, fmt.Sprintf("EXISTS (SELECT 1 FROM jsonb_each_text(prices) WHERE (value)::float <= %f)", *filters.PriceMax)) // What The Fuck idk
 		}
 		if filters.IsSpicy != nil {
 			conditions = append(conditions, sb.Equal("is_spicy", *filters.IsSpicy))
@@ -132,12 +141,11 @@ func (r *MenuRepository) Get(ctx context.Context, id string, filters *model.GetM
 			&menuItem.Description,
 			&menuItem.Ingredients,
 			&menuItem.NutritionalInfo,
-			&menuItem.Price,
+			&menuItem.Prices,
 			&menuItem.IsSpicy,
 			&menuItem.IsVegetarian,
 			&menuItem.IsAvailable,
 			&menuItem.PopularityScore,
-			&menuItem.Sizes,
 			&menuItem.Meta,
 			&menuItem.CreatedAt,
 			&menuItem.UpdatedAt,
@@ -168,12 +176,11 @@ func (r *MenuRepository) Update(ctx context.Context, menuItem *model.MenuItem) e
 		ub.Assign("description", menuItem.Description),
 		ub.Assign("ingredients", menuItem.Ingredients),
 		ub.Assign("nutritional_info", menuItem.NutritionalInfo),
-		ub.Assign("price", menuItem.Price),
+		ub.Assign("prices", menuItem.Prices),
 		ub.Assign("is_spicy", menuItem.IsSpicy),
 		ub.Assign("is_vegetarian", menuItem.IsVegetarian),
 		ub.Assign("is_available", menuItem.IsAvailable),
 		ub.Assign("popularity_score", menuItem.PopularityScore),
-		ub.Assign("sizes", menuItem.Sizes),
 		ub.Assign("meta", menuItem.Meta),
 		ub.Assign("updated_at", menuItem.UpdatedAt),
 		ub.Assign("embedding", menuItem.Embedding),

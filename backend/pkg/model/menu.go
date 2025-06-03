@@ -17,11 +17,10 @@ type MenuItem struct {
 	Description  *string           `json:"description" db:"description"`
 	Ingredients  pq.StringArray         `json:"ingredients" db:"ingredients"`
 	NutritionalInfo *json.RawMessage `json:"nutritional_info" db:"nutritional_info"`
-	Price        float64          `json:"price" db:"price"`
+	Prices        json.RawMessage    `json:"prices" db:"prices"`
 	IsSpicy      bool             `json:"is_spicy" db:"is_spicy"`
 	IsVegetarian bool             `json:"is_vegetarian" db:"is_vegetarian"`
 	IsAvailable  bool             `json:"is_available" db:"is_available"`
-	Sizes        pq.StringArray   `json:"sizes" db:"sizes"`
 	Embedding    *pgvector.Vector `json:"embedding" db:"embedding"`
 	PopularityScore float64          `json:"popularity_score" db:"popularity_score"`
 	Meta         *json.RawMessage `json:"meta" db:"meta"`
@@ -34,6 +33,7 @@ type GetMenuItemFilters struct {
 	RestaurantId *string  `json:"restaurant_id" db:"restaurant_id"`
 	CategoryId   *string  `json:"category_id" db:"category_id"`
 	Name         *string  `json:"name" db:"name"`
+	Prices       *json.RawMessage `json:"prices" db:"prices"`
 	PriceMin     *float64 `json:"price_min" db:"price_min"`
 	PriceMax     *float64 `json:"price_max" db:"price_max"`
 	IsSpicy      *bool    `json:"is_spicy" db:"is_spicy"`
@@ -50,11 +50,8 @@ func ValidateMenuItem(menuItem *MenuItem) error {
 	if menuItem.Name == "" {
 		return errors.New("name is required")
 	}
-	if menuItem.Price < 0 {
-		return errors.New("price must be non-negative")
-	}
-	if menuItem.Sizes == nil {
-		menuItem.Sizes = pq.StringArray{"Single size"}
+	if menuItem.Prices == nil {
+		return errors.New("prices are required")
 	}
 	return nil
 }

@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 
@@ -77,6 +78,23 @@ func (c *MenuController) GetMenuItems(ctx *gin.Context) {
 	if name := ctx.Query("name"); name != "" {
 		filters.Name = &name
 	}
+	
+	for key, value := range ctx.Request.URL.Query() {
+		if len(key) > 7 && key[:7] == "prices." {
+			size := key[7:]
+			if len(value) > 0 {
+				var price float64
+				_, err := fmt.Sscanf(value[0], "%f", &price)
+				if err == nil {
+					if filters.Prices == nil {
+						priceJSON := json.RawMessage(fmt.Sprintf(`{"%s": %f}`, size, price))
+						filters.Prices = &priceJSON
+					}
+				}
+			}
+		}
+	}
+
 	if isSpicy := ctx.Query("is_spicy"); isSpicy != "" {
 		isSpicyBool := isSpicy == "true"
 		filters.IsSpicy = &isSpicyBool
@@ -154,9 +172,6 @@ func (c *MenuController) UpdateMenuItem(ctx *gin.Context) {
 	if updateData.Name != "" {
 		existingItem.Name = updateData.Name
 	}
-	if updateData.Sizes != nil {
-		existingItem.Sizes = updateData.Sizes
-	}
 	if updateData.CategoryId != nil {
 		category, err := c.categoryRepo.Get(ctx, *updateData.CategoryId, nil)
 		if err != nil {
@@ -178,8 +193,8 @@ func (c *MenuController) UpdateMenuItem(ctx *gin.Context) {
 	if updateData.Description != nil {
 		existingItem.Description = updateData.Description
 	}
-	if updateData.Price > 0 {
-		existingItem.Price = updateData.Price
+	if updateData.Prices != nil {
+		existingItem.Prices = updateData.Prices
 	}
 	if updateData.RestaurantId != "" {
 		existingItem.RestaurantId = updateData.RestaurantId
