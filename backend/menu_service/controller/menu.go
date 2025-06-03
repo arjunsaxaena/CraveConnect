@@ -12,11 +12,13 @@ import (
 
 type MenuController struct {
 	repo *repository.MenuRepository
+	categoryRepo *repository.MenuCategoryRepository
 }
 
 func NewMenuController() *MenuController {
 	return &MenuController{
 		repo: repository.NewMenuRepository(),
+		categoryRepo: repository.NewMenuCategoryRepository(),
 	}
 }
 
@@ -27,18 +29,29 @@ func (c *MenuController) CreateMenuItem(ctx *gin.Context) {
 		return
 	}
 
-	imageFile, err := ctx.FormFile("item_image")
-	if err == nil {
-		itemImagePath, err := utils.SaveMenuItemImage(imageFile)
-		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save image"})
-			return
-		}
-		menuItem.ImagePath = itemImagePath
-	}
-
 	if err := model.ValidateMenuItem(menuItem); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	restaurantID := menuItem.RestaurantId
+	valid, err := utils.ValidateRestaurant(restaurantID)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if !valid {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid restaurant ID"})
+		return
+	}
+
+	category, err := c.categoryRepo.Get(ctx, *menuItem.CategoryId, nil)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	if len(category) == 0 {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid category ID"})
 		return
 	}
 
@@ -58,9 +71,39 @@ func (c *MenuController) GetMenuItems(ctx *gin.Context) {
 	if restaurantId := ctx.Query("restaurant_id"); restaurantId != "" {
 		filters.RestaurantId = &restaurantId
 	}
+	if categoryId := ctx.Query("category_id"); categoryId != "" {
+		filters.CategoryId = &categoryId
+	}
 	if name := ctx.Query("name"); name != "" {
 		filters.Name = &name
 	}
+	if isSpicy := ctx.Query("is_spicy"); isSpicy != "" {
+		isSpicyBool := isSpicy == "true"
+		filters.IsSpicy = &isSpicyBool
+	}
+	if isVegetarian := ctx.Query("is_vegetarian"); isVegetarian != "" {
+		isVegetarianBool := isVegetarian == "true"
+		filters.IsVegetarian = &isVegetarianBool
+	}
+	if isAvailable := ctx.Query("is_available"); isAvailable != "" {
+		isAvailableBool := isAvailable == "true"
+		filters.IsAvailable = &isAvailableBool
+	}
+	if popularityScoreMin := ctx.Query("popularity_score_min"); popularityScoreMin != "" {
+		var min float64
+		_, err := fmt.Sscanf(popularityScoreMin, "%f", &min)
+		if err == nil {
+			filters.PopularityScoreMin = &min
+		}
+	}
+	if popularityScoreMax := ctx.Query("popularity_score_max"); popularityScoreMax != "" {
+		var max float64
+		_, err := fmt.Sscanf(popularityScoreMax, "%f", &max)
+		if err == nil {
+			filters.PopularityScoreMax = &max
+		}
+	}
+	
 	if priceMin := ctx.Query("price_min"); priceMin != "" {
 		var min float64
 		_, err := fmt.Sscanf(priceMin, "%f", &min)
@@ -74,13 +117,6 @@ func (c *MenuController) GetMenuItems(ctx *gin.Context) {
 		if err == nil {
 			filters.PriceMax = &max
 		}
-	}
-	if size := ctx.Query("size"); size != "" {
-		filters.Size = &size
-	}
-	if isActive := ctx.Query("is_active"); isActive != "" {
-		active := isActive == "true"
-		filters.IsActive = &active
 	}
 
 	menuItems, err := c.repo.Get(ctx, "", filters)
@@ -118,28 +154,51 @@ func (c *MenuController) UpdateMenuItem(ctx *gin.Context) {
 	if updateData.Name != "" {
 		existingItem.Name = updateData.Name
 	}
-	if updateData.Description != "" {
+	if updateData.Sizes != nil {
+		existingItem.Sizes = updateData.Sizes
+	}
+	if updateData.CategoryId != nil {
+		category, err := c.categoryRepo.Get(ctx, *updateData.CategoryId, nil)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+		if len(category) == 0 {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid category ID"})
+			return
+		}
+		existingItem.CategoryId = &category[0].Id
+	}
+	if updateData.Ingredients != nil {
+		existingItem.Ingredients = updateData.Ingredients
+	}
+	if updateData.NutritionalInfo != nil {
+		existingItem.NutritionalInfo = updateData.NutritionalInfo
+	}
+	if updateData.Description != nil {
 		existingItem.Description = updateData.Description
 	}
 	if updateData.Price > 0 {
 		existingItem.Price = updateData.Price
 	}
-	if updateData.Size != "" {
-		existingItem.Size = updateData.Size
-	}
 	if updateData.RestaurantId != "" {
 		existingItem.RestaurantId = updateData.RestaurantId
-	}
-
-	imageFile, err := ctx.FormFile("item_image")
-	if err == nil {
-		imagePath, err := utils.SaveMenuItemImage(imageFile)
+		valid, err := utils.ValidateRestaurant(updateData.RestaurantId)
 		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, gin.H{"error": "failed to save image"})
+			ctx.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}
-		existingItem.ImagePath = imagePath
+		if !valid {
+			ctx.JSON(http.StatusBadRequest, gin.H{"error": "Invalid restaurant ID"})
+			return
+		}
 	}
+	if updateData.Meta != nil {
+		existingItem.Meta = updateData.Meta
+	}
+	existingItem.IsSpicy = updateData.IsSpicy
+	existingItem.IsVegetarian = updateData.IsVegetarian
+	existingItem.IsAvailable = updateData.IsAvailable
 
 	if err := model.ValidateMenuItem(existingItem); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})

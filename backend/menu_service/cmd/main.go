@@ -15,6 +15,7 @@ func main() {
 	router := gin.Default()
 
 	menuController := controller.NewMenuController()
+	categoryController := controller.NewMenuCategoryController()
 
 	menuRoutes := router.Group("/api/menu")
 	{
@@ -22,6 +23,14 @@ func main() {
 		menuRoutes.GET("", menuController.GetMenuItems)
 		menuRoutes.PATCH("", menuController.UpdateMenuItem)
 		menuRoutes.DELETE("/:id", menuController.DeleteMenuItem)
+	}
+
+	categoryRoutes := router.Group("/api/menu/categories")
+	{
+		categoryRoutes.POST("", categoryController.CreateCategory)
+		categoryRoutes.GET("", categoryController.GetCategories)
+		categoryRoutes.PATCH("", categoryController.UpdateCategory)
+		categoryRoutes.DELETE("/:id", categoryController.DeleteCategory)
 	}
 
 	log.Println("Starting menu service on port 8002...")
