@@ -16,6 +16,10 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
 LLM_MODEL = os.getenv("LLM_MODEL", "gemini-1.5-flash")
 EMBEDDING_MODEL = os.getenv("EMBEDDING_MODEL", "models/embedding-001")
 
+logger.info(f"OCR_ENABLED: {OCR_ENABLED}")
+logger.info(f"GEMINI_API_KEY present: {'Yes' if GEMINI_API_KEY else 'No'}")
+logger.info(f"LLM_MODEL: {LLM_MODEL}")
+
 GENERATION_CONFIG = {
     "temperature": 0.2,
     "top_p": 0.95,

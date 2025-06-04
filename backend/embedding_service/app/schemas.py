@@ -4,27 +4,36 @@ import json
 
 class MenuItem(BaseModel):
     restaurant_id: str
+    category_id: Optional[str] = None
     name: str
-    description: Optional[str] = ""
-    price: float = Field(gt=0, description="Price must be greater than 0")
-    size: Optional[str] = ""  # Make sure this field exists
-    image_path: Optional[str] = ""
-    meta: Optional[str] = "{}"
-    is_active: bool = True
+    description: Optional[str] = None
+    ingredients: Optional[List[str]] = None
+    nutritional_info: Optional[Dict[str, Any]] = None
+    prices: Dict[str, float]
+    is_spicy: bool = False
+    is_vegetarian: bool = False
+    is_available: bool = True
+    popularity_score: float = 0.0
     embedding: Optional[List[float]] = None
+    meta: Optional[Dict[str, Any]] = None
+
+class MenuCategory(BaseModel):
+    restaurant_id: str
+    name: str
+    description: Optional[str] = None
+    meta: Optional[Dict[str, Any]] = None
 
 class MenuItemResponse(BaseModel):
     name: str
     price: Any
     category: Optional[str] = None
 
-# Make sure this class exists and is properly defined
 class MenuImageProcessingResult(BaseModel):
     image_name: str
     success: bool
     message: str
     item_count: int = 0
-    items: List[Dict[str, Any]] = []
+    items: List[MenuItem] = []
     error: Optional[str] = None
 
 class MenuProcessingRequest(BaseModel):
@@ -35,7 +44,7 @@ class MenuProcessingResponse(BaseModel):
     success: bool
     message: str
     item_count: int = 0
-    items: List[Dict[str, Any]] = []
+    items: List[MenuItem] = []
     error: Optional[str] = None
 
 class MenuProcessingBatchResponse(BaseModel):
@@ -43,7 +52,7 @@ class MenuProcessingBatchResponse(BaseModel):
     message: str
     image_count: int
     processed_count: int
-    results: List[MenuImageProcessingResult] = []
+    results: List[MenuImageProcessingResult]
     error: Optional[str] = None
 
 class ExtractedMenuItem(BaseModel):
@@ -66,7 +75,6 @@ class ExtractedMenuItem(BaseModel):
         return value.strip()
 
 def map_to_menu_items(restaurant_id: str, extracted_items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-    """Convert extracted menu items to the format expected by the menu service."""
     menu_items = []
     
     for item in extracted_items:
@@ -96,7 +104,6 @@ def map_to_menu_items(restaurant_id: str, extracted_items: List[Dict[str, Any]])
     return menu_items
 
 def validate_menu_items(menu_items: List[Dict[str, Any]]) -> tuple[bool, Optional[str]]:
-    """Validate a list of menu items."""
     if not menu_items:
         return False, "No valid menu items found"
         
