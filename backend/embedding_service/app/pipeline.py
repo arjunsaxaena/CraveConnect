@@ -12,49 +12,20 @@ class MenuProcessingPipeline:
     
     async def process(self, restaurant_id: str, image_data: bytes) -> Tuple[bool, str, List[Dict[str, Any]]]:
         try:
-            if not ocr_tool:
-                logger.error("OCR tool not initialized")
-                return False, "OCR tool not initialized", []
-                
-            # Extract text from image using OCR
-            text = await ocr_tool.arun(image_data)
-            if not text:
+            # Extract text from image
+            menu_text = await self.extract_text(image_data)
+            if not menu_text:
                 return False, "Failed to extract text from image", []
-            
-            logger.info(f"Extracted text from image: {text[:100]}...")
-            
-            # Extract menu items and categories using LLM
-            menu_items = await self.extractor.extract_and_create(text, restaurant_id)
-            if not menu_items:
-                return False, "Failed to extract menu items", []
-            
-            logger.info(f"Extracted {len(menu_items)} menu items")
-            
-            # Add embeddings to menu items
-            items_with_embeddings = []
-            for item in menu_items:
-                text_for_embedding = f"{item['name']}"
-                if item.get("description"):
-                    text_for_embedding += f" {item['description']}"
                 
-                embedding = await generate_embedding(text_for_embedding)
-                item["embedding"] = embedding
-                items_with_embeddings.append(item)
+            # Extract menu items using LLM
+            items = await self.extractor.extract_and_create(menu_text, restaurant_id)
+            if not items:
+                return False, "Failed to extract menu items", []
+                
+            logger.info(f"Extracted {len(items)} menu items")
             
-            try:
-                logger.info(f"Sending {len(items_with_embeddings)} menu items to database at {MENU_SERVICE_URL}/api/menu")
-                async with aiohttp.ClientSession() as client:
-                    async with client.post(f"{MENU_SERVICE_URL}/api/menu", 
-                                         json={"restaurant_id": restaurant_id, "menu_items": items_with_embeddings}) as response:
-                        if response.status not in [200, 201]:
-                            error_text = await response.text()
-                            logger.error(f"Failed to create menu items: {response.status}, {error_text}")
-                            return False, f"Failed to create menu items: {error_text}", items_with_embeddings
-                        
-                        logger.info(f"Successfully sent {len(items_with_embeddings)} menu items to menu service")
-            except Exception as e:
-                logger.error(f"Failed to send menu items to menu service: {str(e)}")
-                return False, f"Failed to save menu items: {str(e)}", items_with_embeddings
+            # Add embeddings to items
+            items_with_embeddings = await self.add_embeddings(items)
             
             return True, f"Successfully processed {len(items_with_embeddings)} items", items_with_embeddings
             

@@ -91,7 +91,7 @@ class MenuItemExtractor:
                         f"{MENU_SERVICE_URL}/api/menu/categories",
                         json=category_data
                     ) as response:
-                        if response.status == 200:
+                        if response.status in [200, 201]:
                             result = await response.json()
                             category_map[category["name"]] = result["id"]
                             logger.info(f"Created category: {category['name']} with ID: {result['id']}")
@@ -112,10 +112,15 @@ class MenuItemExtractor:
             try:
                 if not item or not item.get("name"):
                     continue
-                    
+                
+                # Get category_id from the category_map
+                category = item.get("category")
+                category_id = category_map.get(category) if category else None
+                
                 menu_item_data = {
                     "restaurant_id": restaurant_id,
                     "name": item["name"],
+                    "category_id": category_id,
                     "prices": item["prices"],
                     "is_spicy": item.get("is_spicy", False),
                     "is_vegetarian": item.get("is_vegetarian", False),
@@ -123,13 +128,6 @@ class MenuItemExtractor:
                     "popularity_score": item.get("popularity_score", 0.0)
                 }
                 
-                # Set category_id if category is present and mapped
-                category = item.get("category")
-                if category and category in category_map:
-                    menu_item_data["category_id"] = category_map[category]
-                else:
-                    menu_item_data["category_id"] = None
-                    
                 # Only include optional fields if present
                 if "description" in item and item["description"]:
                     menu_item_data["description"] = item["description"]
@@ -148,17 +146,19 @@ class MenuItemExtractor:
         if menu_items_to_create:
             try:
                 async with aiohttp.ClientSession() as session:
-                    async with session.post(
-                        f"{MENU_SERVICE_URL}/api/menu",
-                        json={"restaurant_id": restaurant_id, "menu_items": menu_items_to_create}
-                    ) as response:
-                        if response.status == 200:
-                            result = await response.json()
-                            created_items.extend(result)
-                            logger.info(f"Successfully created {len(menu_items_to_create)} menu items")
-                        else:
-                            error_text = await response.text()
-                            logger.error(f"Failed to create menu items: {error_text}")
+                    # Send each menu item individually to ensure proper validation
+                    for menu_item in menu_items_to_create:
+                        async with session.post(
+                            f"{MENU_SERVICE_URL}/api/menu",
+                            json=menu_item
+                        ) as response:
+                            if response.status in [200, 201]:
+                                result = await response.json()
+                                created_items.append(result)
+                                logger.info(f"Successfully created menu item: {menu_item['name']}")
+                            else:
+                                error_text = await response.text()
+                                logger.error(f"Failed to create menu item {menu_item['name']}: {error_text}")
             except Exception as e:
                 logger.error(f"Error creating menu items: {str(e)}")
                 
