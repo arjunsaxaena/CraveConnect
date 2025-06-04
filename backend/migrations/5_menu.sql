@@ -8,7 +8,7 @@ CREATE TABLE menu_categories (
     restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
     description TEXT,
-    display_order INT NOT NULL,
+    meta JSONB DEFAULT '{}',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -18,15 +18,16 @@ CREATE TABLE menu_items (
     restaurant_id UUID NOT NULL REFERENCES restaurants(id) ON DELETE CASCADE,
     category_id UUID REFERENCES menu_categories(id) ON DELETE SET NULL,
     name TEXT NOT NULL,
-    description TEXT NOT NULL,
-    ingredients TEXT[] NOT NULL,
+    description TEXT,
+    ingredients TEXT[],
     nutritional_info JSONB,
-    price NUMERIC(8,2) NOT NULL CHECK (price >= 0),
+    prices JSONB DEFAULT '{}' CHECK (jsonb_typeof(prices) = 'object'),
     is_spicy BOOLEAN DEFAULT FALSE,
     is_vegetarian BOOLEAN DEFAULT FALSE,
     is_available BOOLEAN DEFAULT TRUE,
-    embedding vector(768) NOT NULL, -- For AI recommendations
+    embedding vector(768),
     popularity_score NUMERIC(5,2) DEFAULT 0.00,
+    meta JSONB DEFAULT '{}',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

@@ -3,6 +3,8 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
+	"fmt"
 	"time"
 
 	"github.com/arjunsaxaena/CraveConnect.git/backend/pkg/database"
@@ -26,24 +28,28 @@ func (r *MenuRepository) Create(ctx context.Context, menuItem *model.MenuItem) e
 	menuItem.Id = uuid.New().String()
 	menuItem.CreatedAt = time.Now()
 	menuItem.UpdatedAt = time.Now()
-	menuItem.IsActive = true
 
 	ib := sqlbuilder.NewInsertBuilder()
 	ib.InsertInto("menu_items")
 	ib.Cols(
-		"id", "restaurant_id", "name", "description", "price", "size", "image_path", "meta",
-		"is_active", "created_at", "updated_at", "embedding",
+		"id", "restaurant_id", "category_id", "name", "description", "ingredients", 
+		"nutritional_info", "prices", "is_spicy", "is_vegetarian", "is_available", 
+		"popularity_score", "meta", "created_at", "updated_at", "embedding",
 	)
 	ib.Values(
 		menuItem.Id,
 		menuItem.RestaurantId,
+		menuItem.CategoryId,
 		menuItem.Name,
 		menuItem.Description,
-		menuItem.Price,
-		menuItem.Size,
-		menuItem.ImagePath,
+		menuItem.Ingredients,
+		menuItem.NutritionalInfo,
+		menuItem.Prices,
+		menuItem.IsSpicy,
+		menuItem.IsVegetarian,
+		menuItem.IsAvailable,
+		menuItem.PopularityScore,
 		menuItem.Meta,
-		menuItem.IsActive,
 		menuItem.CreatedAt,
 		menuItem.UpdatedAt,
 		menuItem.Embedding,
@@ -57,8 +63,9 @@ func (r *MenuRepository) Create(ctx context.Context, menuItem *model.MenuItem) e
 func (r *MenuRepository) Get(ctx context.Context, id string, filters *model.GetMenuItemFilters) ([]*model.MenuItem, error) {
 	sb := sqlbuilder.NewSelectBuilder()
 	sb.Select(
-		"id", "restaurant_id", "name", "description", "price", "size", "image_path", "meta",
-		"is_active", "created_at", "updated_at", "embedding",
+		"id", "restaurant_id", "category_id", "name", "description", "ingredients", 
+		"nutritional_info", "prices", "is_spicy", "is_vegetarian", "is_available", 
+		"popularity_score", "meta", "created_at", "updated_at", "embedding",
 	)
 	sb.From("menu_items")
 
@@ -75,20 +82,40 @@ func (r *MenuRepository) Get(ctx context.Context, id string, filters *model.GetM
 		if filters.RestaurantId != nil {
 			conditions = append(conditions, sb.Equal("restaurant_id", *filters.RestaurantId))
 		}
+		if filters.CategoryId != nil {
+			conditions = append(conditions, sb.Equal("category_id", *filters.CategoryId))
+		}
 		if filters.Name != nil {
 			conditions = append(conditions, sb.Like("name", "%"+*filters.Name+"%"))
 		}
+		if filters.Prices != nil {
+			var pricesMap map[string]float64
+			if err := json.Unmarshal(*filters.Prices, &pricesMap); err == nil {
+				for size, price := range pricesMap {
+					conditions = append(conditions, fmt.Sprintf("(prices->>'%s')::float = %f", size, price))
+				}
+			}
+		}
 		if filters.PriceMin != nil {
-			conditions = append(conditions, sb.GreaterEqualThan("price", *filters.PriceMin))
+			conditions = append(conditions, fmt.Sprintf("EXISTS (SELECT 1 FROM jsonb_each_text(prices) WHERE (value)::float >= %f)", *filters.PriceMin)) // What The Fuck idk
 		}
 		if filters.PriceMax != nil {
-			conditions = append(conditions, sb.LessEqualThan("price", *filters.PriceMax))
+			conditions = append(conditions, fmt.Sprintf("EXISTS (SELECT 1 FROM jsonb_each_text(prices) WHERE (value)::float <= %f)", *filters.PriceMax)) // What The Fuck idk
 		}
-		if filters.Size != nil {
-			conditions = append(conditions, sb.Equal("size", *filters.Size))
+		if filters.IsSpicy != nil {
+			conditions = append(conditions, sb.Equal("is_spicy", *filters.IsSpicy))
 		}
-		if filters.IsActive != nil {
-			conditions = append(conditions, sb.Equal("is_active", *filters.IsActive))
+		if filters.IsVegetarian != nil {
+			conditions = append(conditions, sb.Equal("is_vegetarian", *filters.IsVegetarian))
+		}
+		if filters.IsAvailable != nil {
+			conditions = append(conditions, sb.Equal("is_available", *filters.IsAvailable))
+		}
+		if filters.PopularityScoreMin != nil {
+			conditions = append(conditions, sb.GreaterEqualThan("popularity_score", *filters.PopularityScoreMin))
+		}
+		if filters.PopularityScoreMax != nil {
+			conditions = append(conditions, sb.LessEqualThan("popularity_score", *filters.PopularityScoreMax))
 		}
 	}
 
@@ -109,13 +136,17 @@ func (r *MenuRepository) Get(ctx context.Context, id string, filters *model.GetM
 		err := rows.Scan(
 			&menuItem.Id,
 			&menuItem.RestaurantId,
+			&menuItem.CategoryId,
 			&menuItem.Name,
 			&menuItem.Description,
-			&menuItem.Price,
-			&menuItem.Size,
-			&menuItem.ImagePath,
+			&menuItem.Ingredients,
+			&menuItem.NutritionalInfo,
+			&menuItem.Prices,
+			&menuItem.IsSpicy,
+			&menuItem.IsVegetarian,
+			&menuItem.IsAvailable,
+			&menuItem.PopularityScore,
 			&menuItem.Meta,
-			&menuItem.IsActive,
 			&menuItem.CreatedAt,
 			&menuItem.UpdatedAt,
 			&menuItem.Embedding,
@@ -140,13 +171,17 @@ func (r *MenuRepository) Update(ctx context.Context, menuItem *model.MenuItem) e
 	ub.Update("menu_items")
 	ub.Set(
 		ub.Assign("restaurant_id", menuItem.RestaurantId),
+		ub.Assign("category_id", menuItem.CategoryId),
 		ub.Assign("name", menuItem.Name),
 		ub.Assign("description", menuItem.Description),
-		ub.Assign("price", menuItem.Price),
-		ub.Assign("size", menuItem.Size),
-		ub.Assign("image_path", menuItem.ImagePath),
+		ub.Assign("ingredients", menuItem.Ingredients),
+		ub.Assign("nutritional_info", menuItem.NutritionalInfo),
+		ub.Assign("prices", menuItem.Prices),
+		ub.Assign("is_spicy", menuItem.IsSpicy),
+		ub.Assign("is_vegetarian", menuItem.IsVegetarian),
+		ub.Assign("is_available", menuItem.IsAvailable),
+		ub.Assign("popularity_score", menuItem.PopularityScore),
 		ub.Assign("meta", menuItem.Meta),
-		ub.Assign("is_active", menuItem.IsActive),
 		ub.Assign("updated_at", menuItem.UpdatedAt),
 		ub.Assign("embedding", menuItem.Embedding),
 	)
@@ -169,13 +204,8 @@ func (r *MenuRepository) Update(ctx context.Context, menuItem *model.MenuItem) e
 }
 
 func (r *MenuRepository) Delete(ctx context.Context, id string) error {
-	now := time.Now()
-	ub := sqlbuilder.NewUpdateBuilder()
-	ub.Update("menu_items")
-	ub.Set(
-		ub.Assign("is_active", false),
-		ub.Assign("updated_at", now),
-	)
+	ub := sqlbuilder.NewDeleteBuilder()
+	ub.DeleteFrom("menu_items")
 	ub.Where(ub.Equal("id", id))
 
 	query, args := ub.BuildWithFlavor(sqlbuilder.PostgreSQL)

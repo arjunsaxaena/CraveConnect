@@ -13,7 +13,6 @@ async def process_menu(
     restaurant_id: str = Form(...),
     menu_image: UploadFile = File(...)
 ) -> Dict[str, Any]:
-    """Process a single menu image and extract menu items with embeddings."""
     logger.info(f"Received request for restaurant_id: {restaurant_id}")
     logger.info(f"Processing image: {menu_image.filename}, size: {menu_image.size} bytes")
     
@@ -51,7 +50,6 @@ async def process_menu_batch(
     restaurant_id: str = Form(...),
     menu_images: List[UploadFile] = File(...)
 ) -> Dict[str, Any]:
-    """Process multiple menu images in parallel and extract menu items with embeddings."""
     logger.info(f"Received batch request for restaurant_id: {restaurant_id}")
     logger.info(f"Processing {len(menu_images)} images in parallel")
     
@@ -66,7 +64,7 @@ async def process_menu_batch(
                 success=success,
                 message=message,
                 item_count=len(items),
-                items=items[:10],  # Preview first 10 items
+                items=items[:10],
                 error=None if success else message
             )
         except Exception as e:
@@ -79,11 +77,9 @@ async def process_menu_batch(
             )
     
     try:
-        # Process all images in parallel
         tasks = [process_single_image(image) for image in menu_images]
         results = await asyncio.gather(*tasks)
         
-        # Count successful results
         processed_count = sum(1 for result in results if result.success)
         overall_success = processed_count > 0
         
@@ -108,5 +104,4 @@ async def process_menu_batch(
 
 @router.get("/health")
 async def health_check():
-    """Health check endpoint."""
     return {"status": "healthy", "service": "embedding_service"}

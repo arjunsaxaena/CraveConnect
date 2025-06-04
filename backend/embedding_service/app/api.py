@@ -4,7 +4,6 @@ from typing import List, Dict, Any
 from app.config import MENU_SERVICE_URL, logger
 
 async def send_menu_items_with_embeddings(menu_items: List[Dict[str, Any]]) -> bool:
-    """Send menu items with embeddings to the menu service."""
     if not menu_items:
         logger.warning("No menu items to send")
         return True

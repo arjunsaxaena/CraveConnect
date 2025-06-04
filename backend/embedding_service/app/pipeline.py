@@ -1,69 +1,39 @@
 from typing import Tuple, List, Dict, Any
 import time
-from app.embedding import generate_menu_item_embedding
-from app.ocr import ocr_tool
-from app.menu_extractor import menu_extractor
-from app.api import send_menu_items_with_embeddings
-from app.config import logger
+import aiohttp
+from app.embedding import generate_menu_item_embedding, generate_embedding
+from app.ocr import ocr_tool, OCRTool
+from app.menu_extractor import menu_extractor, MenuItemExtractor
+from app.config import logger, MENU_SERVICE_URL
 
 class MenuProcessingPipeline:
-    """Pipeline for processing menu images and extracting menu items with embeddings."""
+    def __init__(self):
+        self.extractor = menu_extractor
     
     async def process(self, restaurant_id: str, image_data: bytes) -> Tuple[bool, str, List[Dict[str, Any]]]:
-        """Process menu image and extract menu items with embeddings."""
         try:
             # Extract text from image
-            logger.info("Starting OCR text extraction...")
-            start_time = time.time()
             menu_text = await self.extract_text(image_data)
-            elapsed_time = time.time() - start_time
-            
             if not menu_text:
-                logger.warning("OCR extraction failed - no text extracted")
-                return False, "Failed to extract text from menu image", []
+                return False, "Failed to extract text from image", []
                 
-            logger.info(f"OCR extraction complete in {elapsed_time:.2f}s. Text length: {len(menu_text)}")
+            # Extract menu items using LLM
+            items = await self.extractor.extract_and_create(menu_text, restaurant_id)
+            if not items:
+                return False, "Failed to extract menu items", []
                 
-            # Extract menu items using the universal extractor
-            logger.info("Starting menu item extraction...")
-            start_time = time.time()
-            menu_items = await menu_extractor.extract_items(menu_text, restaurant_id)
-            elapsed_time = time.time() - start_time
+            logger.info(f"Extracted {len(items)} menu items")
             
-            if not menu_items:
-                logger.warning("Menu item extraction failed - no items found")
-                return False, "No menu items extracted from text", []
+            # Add embeddings to items
+            items_with_embeddings = await self.add_embeddings(items)
             
-            logger.info(f"Menu item extraction complete in {elapsed_time:.2f}s. Items found: {len(menu_items)}")
-                
-            # Generate embeddings for menu items
-            logger.info("Starting embedding generation...")
-            start_time = time.time()
-            items_with_embeddings = await self.add_embeddings(menu_items)
-            elapsed_time = time.time() - start_time
-            logger.info(f"Embedding generation complete in {elapsed_time:.2f}s")
-            
-            # Send items to database
-            logger.info("Sending menu items to database...")
-            start_time = time.time()
-            success = await send_menu_items_with_embeddings(items_with_embeddings)
-            elapsed_time = time.time() - start_time
-            
-            if not success:
-                logger.warning("Failed to store some or all menu items in database")
-                return True, "Menu processed but some items may not be stored", items_with_embeddings
-                
-            logger.info(f"Menu items stored in database in {elapsed_time:.2f}s")
-            
-            # Return results
-            return True, "Successfully processed and stored menu", items_with_embeddings
+            return True, f"Successfully processed {len(items_with_embeddings)} items", items_with_embeddings
             
         except Exception as e:
-            logger.error(f"Error in menu processing pipeline: {str(e)}")
-            return False, f"Error processing menu: {str(e)}", []
+            logger.error(f"Error in pipeline processing: {str(e)}")
+            return False, str(e), []
 
     async def extract_text(self, image_data: bytes) -> str:
-        """Extract text from menu image."""
         if not ocr_tool:
             logger.warning("OCR tool not initialized")
             return ""
@@ -75,7 +45,6 @@ class MenuProcessingPipeline:
             return ""
 
     async def add_embeddings(self, menu_items: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Add embeddings to menu items."""
         if not menu_items:
             return []
             
@@ -92,13 +61,11 @@ class MenuProcessingPipeline:
                 
             except Exception as e:
                 logger.error(f"Error adding embedding to menu item: {str(e)}")
-                # Still add the item without embedding
                 result.append(item)
                 
         return result
 
     async def send_menu_items_to_database(self, restaurant_id, menu_items):
-        """Send extracted menu items to the menu service database."""
         import aiohttp
         from app.config import MENU_SERVICE_URL, logger
         
@@ -108,7 +75,5 @@ class MenuProcessingPipeline:
             async with client.post(f"{MENU_SERVICE_URL}/menu", json={"restaurant_id": restaurant_id, "menu_items": menu_items}) as response:
                 result = await response.json()
                 
-        # The session and connection are automatically closed when exiting the context
-        
         logger.info(f"Sent {len(menu_items)}/{len(menu_items)} menu items (100%)")
         return result

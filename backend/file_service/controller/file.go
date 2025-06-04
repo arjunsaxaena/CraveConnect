@@ -1,15 +1,18 @@
 package controller
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"image"
 	_ "image/gif"
 	_ "image/jpeg"
 	_ "image/png"
 	"io"
+	"mime/multipart"
 	"net/http"
 	"strings"
 
@@ -17,6 +20,10 @@ import (
 	"github.com/arjunsaxaena/CraveConnect.git/backend/pkg/model"
 	"github.com/arjunsaxaena/CraveConnect.git/backend/pkg/utils"
 	"github.com/gin-gonic/gin"
+)
+
+const (
+	EmbeddingServiceURL = "http://localhost:8005" // Update this with your embedding service URL
 )
 
 type FileController struct {
@@ -27,6 +34,60 @@ func NewFileController() *FileController {
 	return &FileController{
 		repo: repository.NewFileRepository(),
 	}
+}
+
+func (c *FileController) processMenuImage(file *multipart.FileHeader, restaurantID string) error {
+	src, err := file.Open()
+	if err != nil {
+		return err
+	}
+	defer src.Close()
+
+	// Create a new multipart form
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+
+	// Add the file
+	part, err := writer.CreateFormFile("menu_image", file.Filename)
+	if err != nil {
+		return err
+	}
+
+	if _, err = io.Copy(part, src); err != nil {
+		return err
+	}
+
+	// Add restaurant_id
+	if err = writer.WriteField("restaurant_id", restaurantID); err != nil {
+		return err
+	}
+
+	// Close the writer
+	if err = writer.Close(); err != nil {
+		return err
+	}
+
+	// Create the request
+	req, err := http.NewRequest("POST", EmbeddingServiceURL+"/process-menu", body)
+	if err != nil {
+		return err
+	}
+
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	// Send the request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("embedding service returned status code: %d", resp.StatusCode)
+	}
+
+	return nil
 }
 
 func (c *FileController) UploadFile(ctx *gin.Context) {
@@ -61,6 +122,12 @@ func (c *FileController) UploadFile(ctx *gin.Context) {
 	purpose := ctx.PostForm("purpose")
 	if purpose == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Purpose is required"})
+		return
+	}
+
+	restaurantID := ctx.PostForm("restaurant_id")
+	if purpose == model.FilePurposeMenuImage && restaurantID == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": "Restaurant ID is required for menu images"})
 		return
 	}
 
@@ -182,6 +249,12 @@ func (c *FileController) UploadFile(ctx *gin.Context) {
 			src.Close()
 			errors = append(errors, "Failed to save file metadata for: "+file.Filename)
 			continue
+		}
+
+		if purpose == model.FilePurposeMenuImage {
+			if err := c.processMenuImage(file, restaurantID); err != nil {
+				errors = append(errors, "Failed to process menu image through embedding service: "+file.Filename)
+			}
 		}
 
 		uploadedFiles = append(uploadedFiles, fileModel)
