@@ -1,9 +1,11 @@
 import json
-import asyncio
+import re
 import aiohttp
+import asyncio
 from typing import List, Dict, Any, Optional
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain.schema import HumanMessage
+from app.embedding import generate_menu_item_embedding
 from app.config import logger, GEMINI_API_KEY, LLM_MODEL, MENU_SERVICE_URL
 
 class MenuItemExtractor:
@@ -43,7 +45,67 @@ class MenuItemExtractor:
 
     async def _extract_categories_and_items(self, menu_text: str) -> Dict[str, Any]:
         """Extract categories and menu items using LLM."""
-        prompt = f"""Extract menu categories and items from this text. Return a JSON object with categories and menu_items.\n\nMenu text:\n{menu_text}\n\nExample format:\n{{\n    "categories": [\n        {{\n            "name": "Ice Blended"\n        }}\n    ],\n    "menu_items": [\n        {{\n            "name": "BRRRISTA",\n            "category": "Ice Blended",\n            "prices": {{\n                "regular": 87.5,\n                "large": 90.5\n            }},\n            "nutritional_info": {{\n                "calories": 169\n            }}\n        }}\n    ]\n}}\n\nRules:\n1. Extract ALL items from the menu\n2. Use a dict for sizes/prices if multiple sizes (e.g., \"prices\": {{\"regular\": 87.5, \"large\": 90.5}})\n3. Only include optional fields (description, ingredients, nutritional_info) if present in the menu\n4. Use \"category\" field to indicate which category an item belongs to\n5. Return ONLY the JSON object, no other text\n"""
+        prompt = f"""Extract menu categories and items from this text. Analyze each item carefully to separate name from description and classify vegetarian status.
+
+                    Menu text:
+                    {menu_text}
+
+                    INSTRUCTIONS:
+                    1. Separate the main item name from descriptive text in parentheses or after dashes
+                    2. Classify if each item is vegetarian based on ingredients (coffee, milk, chocolate = vegetarian; meat, fish = non-vegetarian)
+                    3. Look for price information or estimate reasonable prices
+                    4. Extract spicy indicators (words like "spicy", "hot", "chili", etc.)
+
+                    Example format:
+                    {{
+                        "categories": [
+                            {{
+                                "name": "COFFEES"
+                            }}
+                        ],
+                        "menu_items": [
+                            {{
+                                "name": "Café Americano",
+                                "description": "Black Coffee",
+                                "category": "COFFEES",
+                                "prices": {{
+                                    "regular": 120.0
+                                }},
+                                "is_vegetarian": true,
+                                "is_spicy": false
+                            }},
+                            {{
+                                "name": "Chicken Tikka Pizza",
+                                "description": "Spicy chicken with tikka masala sauce",
+                                "category": "PIZZA",
+                                "prices": {{
+                                    "regular": 350.0
+                                }},
+                                "is_vegetarian": false,
+                                "is_spicy": true
+                            }}
+                        ]
+                    }}
+
+                    VEGETARIAN CLASSIFICATION RULES:
+                    - Coffee, tea, milk-based drinks, chocolate = VEGETARIAN
+                    - Fruits, vegetables, dairy products = VEGETARIAN
+                    - Chicken, mutton, fish, seafood, egg = NON-VEGETARIAN
+                    - If uncertain, default to VEGETARIAN for beverages and desserts
+
+                    PRICE ESTIMATION (if not found in text):
+                    - Basic coffee: 80-120
+                    - Specialty coffee: 120-180
+                    - Cold coffee/frappe: 150-220
+                    - Milkshakes: 180-250
+                    - Hot chocolate: 100-150
+
+                    NAME/DESCRIPTION SEPARATION:
+                    - Main name should be the primary item (e.g., "Café Latte")
+                    - Description should be explanatory text (e.g., "More creamy coffee with vanilla shot")
+                    - Remove parentheses and quotation marks from names
+                    """
+
         try:
             messages = [HumanMessage(content=prompt)]
             response = await asyncio.to_thread(self.model.generate, [messages])
@@ -107,7 +169,7 @@ class MenuItemExtractor:
         created_items = []
         menu_items_to_create = []
         
-        # First, prepare all menu items with their category IDs
+        # First, prepare all menu items with their category IDs and embeddings
         for item in items:
             try:
                 if not item or not item.get("name"):
@@ -120,6 +182,7 @@ class MenuItemExtractor:
                 menu_item_data = {
                     "restaurant_id": restaurant_id,
                     "name": item["name"],
+                    "description": item.get("description"),
                     "category_id": category_id,
                     "prices": item["prices"],
                     "is_spicy": item.get("is_spicy", False),
@@ -127,6 +190,15 @@ class MenuItemExtractor:
                     "is_available": item.get("is_available", True),
                     "popularity_score": item.get("popularity_score", 0.0)
                 }
+                
+                # Generate embedding before creating in database
+                try:
+                    embedding = await generate_menu_item_embedding(menu_item_data)
+                    menu_item_data["embedding"] = embedding
+                    logger.info(f"Generated embedding for: {item['name']}")
+                except Exception as e:
+                    logger.error(f"Failed to generate embedding for {item['name']}: {str(e)}")
+                    # Continue without embedding
                 
                 # Only include optional fields if present
                 if "description" in item and item["description"]:
@@ -139,7 +211,7 @@ class MenuItemExtractor:
                 menu_items_to_create.append(menu_item_data)
                 
             except Exception as e:
-                logger.error(f"Error preparing menu item {item.get('name', '')}: {str(e)}")
+                logger.error(f"Error preparing menu item {item.get('name', 'Unknown')}: {str(e)}")
                 continue
         
         # Then, create all menu items in one batch
@@ -155,7 +227,7 @@ class MenuItemExtractor:
                             if response.status in [200, 201]:
                                 result = await response.json()
                                 created_items.append(result)
-                                logger.info(f"Successfully created menu item: {menu_item['name']}")
+                                logger.info(f"Successfully created menu item with embedding: {menu_item['name']}")
                             else:
                                 error_text = await response.text()
                                 logger.error(f"Failed to create menu item {menu_item['name']}: {error_text}")
