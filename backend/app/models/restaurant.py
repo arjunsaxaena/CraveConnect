@@ -1,0 +1,1 @@
+# Restaurant SQLAlchemy model will go here 

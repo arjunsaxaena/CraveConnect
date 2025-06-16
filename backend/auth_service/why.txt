@@ -1,2 +1,0 @@
-For user and restaurant google sign in or phone number otp sign in 
-Storing no password
