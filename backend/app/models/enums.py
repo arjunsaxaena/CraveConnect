@@ -23,3 +23,8 @@ class AuthProvider(enum.Enum):
     google = 'google'
     apple = 'apple'
     phone = 'phone' 
+
+class SpiceTolerance(enum.Enum):
+    low = 'low'
+    medium = 'medium'
+    high = 'high'

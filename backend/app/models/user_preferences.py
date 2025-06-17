@@ -1,12 +1,8 @@
 from sqlalchemy import Column, ForeignKey, DateTime, JSON, func, Enum, Array, String
 from sqlalchemy.dialects.postgresql import UUID
 from app.db.base import Base
-import enum
+from .enums import SpiceTolerance
 
-class SpiceTolerance(enum.Enum):
-    low = 'low'
-    medium = 'medium'
-    high = 'high'
 
 class UserPreferences(Base):
     __tablename__ = 'user_preferences'
