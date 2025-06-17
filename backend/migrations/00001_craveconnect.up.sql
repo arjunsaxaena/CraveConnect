@@ -79,6 +79,8 @@ create table favorites (
   user_id uuid references users (id),
   menu_item_id uuid references menu_items (id),
   created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  meta jsonb,
   primary key (user_id, menu_item_id)
 );
 
