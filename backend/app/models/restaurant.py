@@ -3,6 +3,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from app.db.base import Base
 import uuid
 from app.db.tables import Tables
+from app.core.errors import errors
 
 
 class Restaurant(Base):
@@ -15,3 +16,13 @@ class Restaurant(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     meta = Column(JSON, nullable=True, default={})
+
+
+def validate_restaurant(restaurant: Restaurant):
+    if restaurant.name is None or restaurant.name == "":
+        raise errors.BadRequestError("Name must be provided")
+
+    if restaurant.owner_id is None:
+        raise errors.BadRequestError("Owner ID must be provided")
+
+    return restaurant

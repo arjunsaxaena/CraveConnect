@@ -3,6 +3,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from app.db.base import Base
 import uuid
 from app.db.tables import Tables
+from app.core.errors import errors
 
 
 class Order(Base):
@@ -15,3 +16,16 @@ class Order(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     meta = Column(JSON, nullable=True, default={})
+
+
+def validate_order(order: Order):
+    if order.user_id is None:
+        raise errors.BadRequestError("User ID must be provided")
+
+    if order.restaurant_id is None:
+        raise errors.BadRequestError("Restaurant ID must be provided")
+
+    if order.total_price is None or order.total_price <= 0:
+        raise errors.BadRequestError("Total price must be greater than 0")
+
+    return order

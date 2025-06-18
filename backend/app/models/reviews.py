@@ -3,6 +3,8 @@ from sqlalchemy.dialects.postgresql import UUID
 from app.db.base import Base
 import uuid
 from app.db.tables import Tables
+from app.core.errors import errors
+
 
 class Review(Base):
     __tablename__ = Tables.REVIEWS
@@ -15,3 +17,16 @@ class Review(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     meta = Column(JSON, nullable=True, default={})
+
+
+def validate_review(review: Review):
+    if review.user_id is None:
+        raise errors.BadRequestError("User ID must be provided")
+
+    if review.restaurant_id is None:
+        raise errors.BadRequestError("Restaurant ID must be provided")
+
+    if review.rating is None or review.rating < 1 or review.rating > 5:
+        raise errors.BadRequestError("Rating must be between 1 and 5")
+
+    return review

@@ -4,6 +4,7 @@ from app.db.base import Base
 import uuid
 from .enums import PaymentStatus
 from app.db.tables import Tables
+from app.core.errors import errors
 
 
 class Payment(Base):
@@ -16,3 +17,16 @@ class Payment(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     meta = Column(JSON, nullable=True, default={})
+
+
+def validate_payment(payment: Payment):
+    if payment.order_id is None:
+        raise errors.BadRequestError("Order ID must be provided")
+
+    if payment.amount is None or payment.amount <= 0:
+        raise errors.BadRequestError("Amount must be greater than 0")
+
+    if payment.status is None:
+        raise errors.BadRequestError("Status must be provided")
+
+    return payment

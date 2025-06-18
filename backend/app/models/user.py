@@ -4,6 +4,7 @@ from app.db.base import Base
 from .enums import AuthProvider
 import uuid
 from app.db.tables import Tables
+from app.core.errors import errors
 
 
 class User(Base):
@@ -18,3 +19,16 @@ class User(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     meta = Column(JSON, nullable=True, default={})
+
+
+def validate_user(user: User):
+    if user.name is None or user.name == "":
+        raise errors.BadRequestError("Name must be provided")
+
+    if user.email is None or user.email == "":
+        raise errors.BadRequestError("Email must be provided")
+
+    if user.provider is None:
+        raise errors.BadRequestError("Provider must be provided")
+
+    return user

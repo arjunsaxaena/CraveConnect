@@ -3,6 +3,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from app.db.base import Base
 import uuid
 from app.db.tables import Tables
+from app.core.errors import errors
 
 
 class OrderAssignments(Base):
@@ -14,3 +15,13 @@ class OrderAssignments(Base):
     assigned_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     meta = Column(JSON, nullable=True, default={})
+
+
+def validate_order_assignments(order_assignments: OrderAssignments):
+    if order_assignments.order_id is None:
+        raise errors.BadRequestError("Order ID must be provided")
+
+    if order_assignments.delivery_person_id is None:
+        raise errors.BadRequestError("Delivery person ID must be provided")
+
+    return order_assignments

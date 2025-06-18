@@ -3,6 +3,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from app.db.base import Base
 import uuid
 from app.db.tables import Tables
+from app.core.errors import errors
 
 
 class Queries(Base):
@@ -16,3 +17,13 @@ class Queries(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     meta = Column(JSON, nullable=True, default={})
+
+
+def validate_queries(queries: Queries):
+    if queries.user_id is None:
+        raise errors.BadRequestError("User ID must be provided")
+
+    if queries.query_text is None or queries.query_text == "":
+        raise errors.BadRequestError("Query text must be provided")
+
+    return queries

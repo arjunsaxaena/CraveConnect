@@ -3,6 +3,7 @@ from sqlalchemy.dialects.postgresql import UUID
 from app.db.base import Base
 import uuid
 from app.db.tables import Tables
+from app.core.errors import errors
 
 
 class Notification(Base):
@@ -16,3 +17,16 @@ class Notification(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     meta = Column(JSON, nullable=True, default={})
+
+
+def validate_notification(notification: Notification):
+    if notification.user_id is None:
+        raise errors.BadRequestError("User ID must be provided")
+
+    if notification.title is None or notification.title == "":
+        raise errors.BadRequestError("Title must be provided")
+
+    if notification.body is None or notification.body == "":
+        raise errors.BadRequestError("Body must be provided")
+
+    return notification
