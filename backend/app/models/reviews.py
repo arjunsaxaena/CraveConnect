@@ -13,4 +13,4 @@ class Review(Base):
     comment = Column(String, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
-    meta = Column(JSON, nullable=True)
+    meta = Column(JSON, nullable=True, default={})
