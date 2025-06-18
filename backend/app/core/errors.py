@@ -1,4 +1,5 @@
 from fastapi import HTTPException
+from sqlalchemy.exc import IntegrityError, OperationalError, SQLAlchemyError
 
 class errors:
     NOT_FOUND_ERROR = "Resource not found"
@@ -31,6 +32,9 @@ class errors:
     UPGRADE_REQUIRED = "Upgrade required"
     REQUEST_HEADER_FIELDS_TOO_LARGE = "Request header fields too large"
     UNAVAILABLE_FOR_LEGAL_REASONS = "Unavailable for legal reasons"
+    INTEGRITY_ERROR = "Database integrity error"
+    OPERATIONAL_ERROR = "Database operational error"
+    GENERIC_DATABASE_ERROR = "Database error"
 
 
 class NotFoundError(HTTPException):
@@ -152,3 +156,15 @@ class RequestHeaderFieldsTooLargeError(HTTPException):
 class UnavailableForLegalReasonsError(HTTPException):
     def __init__(self, detail=errors.UNAVAILABLE_FOR_LEGAL_REASONS):
         super().__init__(status_code=451, detail=detail)
+
+class DatabaseIntegrityError(HTTPException):
+    def __init__(self, detail=errors.INTEGRITY_ERROR):
+        super().__init__(status_code=409, detail=detail)
+
+class DatabaseOperationalError(HTTPException):
+    def __init__(self, detail=errors.OPERATIONAL_ERROR):
+        super().__init__(status_code=500, detail=detail)
+
+class DatabaseError(HTTPException):
+    def __init__(self, detail=errors.GENERIC_DATABASE_ERROR):
+        super().__init__(status_code=500, detail=detail)
