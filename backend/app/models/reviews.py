@@ -2,9 +2,10 @@ from sqlalchemy import Column, String, DateTime, Integer, JSON, func, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from app.db.base import Base
 import uuid
+from app.db.tables import Tables
 
 class Review(Base):
-    __tablename__ = 'reviews'
+    __tablename__ = Tables.REVIEWS
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False)

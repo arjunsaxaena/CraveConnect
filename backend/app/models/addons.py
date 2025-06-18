@@ -1,11 +1,12 @@
 from sqlalchemy import Column, String, DateTime, JSON, func, Numeric
 from sqlalchemy.dialects.postgresql import UUID
 from app.db.base import Base
+from app.db.tables import Tables
 import uuid
 
 
 class Addons(Base):
-    __tablename__ = 'addons'
+    __tablename__ = Tables.ADDONS
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)

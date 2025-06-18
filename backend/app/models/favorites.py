@@ -2,10 +2,11 @@ from sqlalchemy import Column, ForeignKey, DateTime, JSON, func
 from sqlalchemy.dialects.postgresql import UUID
 from app.db.base import Base
 import uuid
+from app.db.tables import Tables
 
 
 class Favorites(Base):
-    __tablename__ = 'favorites'
+    __tablename__ = Tables.FAVORITES
 
     user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), primary_key=True, nullable=False)
     menu_item_id = Column(UUID(as_uuid=True), ForeignKey('menu_items.id'), primary_key=True, nullable=False)

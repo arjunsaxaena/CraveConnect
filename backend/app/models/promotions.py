@@ -2,10 +2,11 @@ from sqlalchemy import Column, String, DateTime, JSON, func, ForeignKey, Numeric
 from sqlalchemy.dialects.postgresql import UUID
 from app.db.base import Base
 import uuid
+from app.db.tables import Tables
 
 
 class Promotion(Base):
-    __tablename__ = 'promotions'
+    __tablename__ = Tables.PROMOTIONS
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     restaurant_id = Column(UUID(as_uuid=True), ForeignKey('restaurants.id'), nullable=False)

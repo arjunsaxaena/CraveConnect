@@ -2,10 +2,11 @@ from sqlalchemy import Column, ForeignKey, DateTime, JSON, func, Float
 from sqlalchemy.dialects.postgresql import UUID
 from app.db.base import Base
 import uuid
+from app.db.tables import Tables
 
 
 class Recommendation(Base):
-    __tablename__ = 'recommendations'
+    __tablename__ = Tables.RECOMMENDATIONS
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     query_id = Column(UUID(as_uuid=True), ForeignKey('queries.id'), nullable=False)

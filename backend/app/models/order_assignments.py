@@ -2,10 +2,11 @@ from sqlalchemy import Column, ForeignKey, DateTime, JSON, func
 from sqlalchemy.dialects.postgresql import UUID
 from app.db.base import Base
 import uuid
+from app.db.tables import Tables
 
 
 class OrderAssignments(Base):
-    __tablename__ = 'order_assignments'
+    __tablename__ = Tables.ORDER_ASSIGNMENTS
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     order_id = Column(UUID(as_uuid=True), ForeignKey('orders.id'), nullable=False)

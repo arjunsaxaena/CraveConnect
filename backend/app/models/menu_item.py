@@ -2,9 +2,11 @@ from sqlalchemy import Column, String, DateTime, Array, JSON, func, UniqueConstr
 from sqlalchemy.dialects.postgresql import UUID
 from app.db.base import Base
 import uuid
+from app.db.tables import Tables
+
 
 class MenuItem(Base):
-    __tablename__ = 'menu_items'
+    __tablename__ = Tables.MENU_ITEMS
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     restaurant_id = Column(UUID(as_uuid=True), ForeignKey('restaurants.id'), nullable=False)

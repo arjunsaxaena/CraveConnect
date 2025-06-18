@@ -3,10 +3,11 @@ from sqlalchemy.dialects.postgresql import UUID
 from app.db.base import Base
 import uuid
 from .enums import FileTypes
+from app.db.tables import Tables
 
 
 class File(Base):
-    __tablename__ = 'files'
+    __tablename__ = Tables.FILES
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     file_url = Column(String, nullable=False)

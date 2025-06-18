@@ -3,10 +3,11 @@ from sqlalchemy.dialects.postgresql import UUID
 from app.db.base import Base
 import uuid
 from .enums import PaymentStatus
+from app.db.tables import Tables
 
 
 class Payment(Base):
-    __tablename__ = 'payments'
+    __tablename__ = Tables.PAYMENTS
     
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     order_id = Column(UUID(as_uuid=True), ForeignKey('orders.id'), nullable=False)

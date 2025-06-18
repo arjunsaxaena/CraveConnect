@@ -2,10 +2,11 @@ from sqlalchemy import Column, ForeignKey, DateTime, JSON, func, Enum, Array, St
 from sqlalchemy.dialects.postgresql import UUID
 from app.db.base import Base
 from .enums import SpiceTolerance
+from app.db.tables import Tables
 
 
 class UserPreferences(Base):
-    __tablename__ = 'user_preferences'
+    __tablename__ = Tables.USER_PREFERENCES
 
     user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), primary_key=True, nullable=False)
     preferred_cuisines = Column(Array(String), nullable=False)

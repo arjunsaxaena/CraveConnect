@@ -3,10 +3,11 @@ from sqlalchemy.dialects.postgresql import UUID
 from app.db.base import Base
 from .enums import VehicleType
 import uuid
+from app.db.tables import Tables
 
 
 class DeliveryPerson(Base):
-    __tablename__ = 'delivery_persons'
+    __tablename__ = Tables.DELIVERY_PERSONS
     __table_args__ = (UniqueConstraint('phone_number', name='uq_delivery_person_phone_number'),)
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

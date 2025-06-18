@@ -3,10 +3,11 @@ from sqlalchemy.dialects.postgresql import UUID
 from app.db.base import Base
 from .enums import AuthProvider
 import uuid
+from app.db.tables import Tables
 
 
 class User(Base):
-    __tablename__ = 'users'
+    __tablename__ = Tables.USERS
     __table_args__ = (UniqueConstraint('email', name='uq_user_email'),)
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)

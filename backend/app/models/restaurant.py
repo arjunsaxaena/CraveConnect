@@ -1,10 +1,12 @@
-from sqlalchemy import Column, String, DateTime, JSON, func, UniqueConstraint, ForeignKey
+from sqlalchemy import Column, String, DateTime, JSON, func,  ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from app.db.base import Base
 import uuid
+from app.db.tables import Tables
+
 
 class Restaurant(Base):
-    __tablename__ = 'restaurants'
+    __tablename__ = Tables.RESTAURANTS
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     name = Column(String, nullable=False)
