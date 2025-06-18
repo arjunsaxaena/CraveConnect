@@ -18,4 +18,3 @@ class Tables:
     USER_PREFERENCES = 'user_preferences'
     PAYMENTS = 'payments'
     NOTIFICATIONS = 'notifications'
-    

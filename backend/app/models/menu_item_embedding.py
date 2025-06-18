@@ -1,7 +1,7 @@
-from sqlalchemy import Column, ForeignKey, DateTime, JSON, func, Float, Vector
+from sqlalchemy import Column, ForeignKey, DateTime, JSON, func
+from pgvector.sqlalchemy import Vector
 from sqlalchemy.dialects.postgresql import UUID
 from app.db.base import Base
-import uuid
 from app.db.tables import Tables
 from app.core.errors import errors
 
