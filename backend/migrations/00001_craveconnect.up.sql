@@ -33,7 +33,7 @@ create table restaurants (
   owner_id uuid references users (id),
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
-  meta jsonb
+  meta jsonb default '{}'
 );
 
 create table menu_items (
@@ -45,7 +45,7 @@ create table menu_items (
   allergens text[],
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
-  meta jsonb
+  meta jsonb default '{}'
 );
 
 create table menu_item_options (
@@ -54,9 +54,9 @@ create table menu_item_options (
   name text not null,         -- e.g., 'Small', 'Medium', 'Large'
   description text,
   price numeric(10,2) not null,
-  meta jsonb,
   created_at timestamptz default now(),
-  updated_at timestamptz default now()
+  updated_at timestamptz default now(),
+  meta jsonb default '{}'
 );
 
 create table addons (
@@ -64,9 +64,9 @@ create table addons (
   name text not null,         -- e.g., 'Extra Cheese'
   description text,
   price numeric(10,2) not null,
-  meta jsonb,
   created_at timestamptz default now(),
-  updated_at timestamptz default now()
+  updated_at timestamptz default now(),
+  meta jsonb default '{}'
 );
 
 create table menu_item_addons (
@@ -80,7 +80,7 @@ create table favorites (
   menu_item_id uuid references menu_items (id),
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
-  meta jsonb,
+  meta jsonb default '{}',
   primary key (user_id, menu_item_id)
 );
 
@@ -94,7 +94,7 @@ create table promotions (
   valid_to timestamptz,
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
-  meta jsonb
+  meta jsonb default '{}'
 );
 
 create table orders (
@@ -104,7 +104,7 @@ create table orders (
   total_price numeric(10, 2) not null,
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
-  meta jsonb
+  meta jsonb default '{}'
 );
 
 create table queries (
@@ -115,7 +115,7 @@ create table queries (
   feedback text,
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
-  meta jsonb
+  meta jsonb default '{}'
 );
 
 create table delivery_persons (
@@ -127,7 +127,7 @@ create table delivery_persons (
   vehicle_type vehicle_type not null,
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
-  meta jsonb
+  meta jsonb default '{}'
 );
 
 create table order_assignments (
@@ -136,7 +136,7 @@ create table order_assignments (
   delivery_person_id uuid references delivery_persons (id),
   assigned_at timestamptz default now(),
   updated_at timestamptz default now(),
-  meta jsonb
+  meta jsonb default '{}'
 );
 
 create table reviews (
@@ -147,7 +147,7 @@ create table reviews (
   comment text,
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
-  meta jsonb
+  meta jsonb default '{}'
 );
 
 
@@ -159,7 +159,7 @@ create table files (
   uploaded_by uuid references users (id),
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
-  meta jsonb
+  meta jsonb default '{}'
 );
 
 
@@ -171,7 +171,7 @@ create table recommendations (
   confidence_score numeric(5, 4),
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
-  meta jsonb
+  meta jsonb default '{}'
 );
 
 create table menu_item_embeddings (
@@ -179,7 +179,7 @@ create table menu_item_embeddings (
   embedding vector(768),
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
-  meta jsonb
+  meta jsonb default '{}'
 );
 
 create table user_preferences (
@@ -190,7 +190,7 @@ create table user_preferences (
   allergies text[],
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
-  meta jsonb
+  meta jsonb default '{}'
 );
 
 
@@ -203,7 +203,7 @@ create table payments (
   provider text,
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
-  meta jsonb
+  meta jsonb default '{}'
 );
 
 create table notifications (
@@ -214,5 +214,5 @@ create table notifications (
   seen boolean default false,
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
-  meta jsonb
+  meta jsonb default '{}'
 );
