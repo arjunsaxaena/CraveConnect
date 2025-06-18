@@ -35,6 +35,16 @@ def update_user(user_id: str = Query(...), user_in: UserUpdate = None, db: Sessi
     user = user_repo.get(db, id=user_id)
     if not user:
         raise NotFoundError(f"User {user_id} not found")
+
+    update_data = user_in.dict(exclude_unset=True)
+
+    if "email" in update_data and update_data["email"] != user.email:
+        existing = user_repo.get(db, filters=type("obj", (), {"email": update_data["email"]})())
+        if existing and (isinstance(existing, list) and any(u.id != user.id for u in existing) or hasattr(existing, 'id') and existing.id != user.id):
+            raise BadRequestError("Email already exists")
+        if existing and not isinstance(existing, list) and existing.id != user.id:
+            raise BadRequestError("Email already exists")
+
     try:
         updated = user_repo.update(db, db_obj=user, obj_in=user_in)
         return UserSingleResponse(data=updated, message="User updated successfully")
