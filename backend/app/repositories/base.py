@@ -15,7 +15,11 @@ class BaseRepository(Generic[T]):
         if id is not None:
             return query.get(id)
         if filters:
-            for field, value in filters.dict(exclude_unset=True).items():
+            if hasattr(filters, 'dict'):
+                items = filters.dict(exclude_unset=True).items()
+            else:
+                items = filters.items()
+            for field, value in items:
                 if value is not None:
                     query = query.filter(getattr(self.model, field) == value)
             return query.all()
