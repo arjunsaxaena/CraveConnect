@@ -1,9 +1,15 @@
 from fastapi import FastAPI
 from app.api.user.handler import router as user_router
-
+from app.api.restaurant.handler import router as restaurant_router
 app = FastAPI()
 
-app.include_router(user_router, prefix="/v1/api")
+ROUTERS = [
+    user_router,
+    restaurant_router,
+]
+
+for router in ROUTERS:
+    app.include_router(router, prefix="/v1/api")
 
 if __name__ == "__main__":
     import uvicorn
