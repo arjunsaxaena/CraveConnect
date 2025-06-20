@@ -5,7 +5,7 @@ from app.models.restaurant import Restaurant
 from app.models.reviews import Review
 from app.models.payment import Payment
 from app.models.favorites import Favorites
-from app.models.menu_item import MenuItem
+from app.models.menu_items import MenuItem
 from app.models.menu_item_addons import MenuItemAddons
 from app.models.menu_item_embedding import MenuItemEmbedding
 from app.models.menu_item_options import MenuItemOptions
