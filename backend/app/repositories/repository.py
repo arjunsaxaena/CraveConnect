@@ -16,7 +16,7 @@ from app.models.queries import Queries
 from app.models.recommendation import Recommendation
 from app.models.file import File
 from app.models.addons import Addons
-from app.models.delivery_person import DeliveryPerson
+from backend.app.models.delivery_persons import DeliveryPerson
 from app.models.user_preferences import UserPreferences
 
 
