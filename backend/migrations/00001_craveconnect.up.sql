@@ -41,6 +41,7 @@ create table menu_items (
   restaurant_id uuid references restaurants (id),
   name text not null,
   description text,
+  price numeric(10,2) not null,
   tags text[],
   allergens text[],
   created_at timestamptz default now(),
