@@ -27,27 +27,42 @@ def extract_menu_data_from_image(file_path: str) -> dict:
         prompt = """
         Analyze the menu image provided and extract all menu items.
         Return the data as a valid JSON object with a single key: "menu_items".
+        
+        **CRITICAL INSTRUCTIONS:**
+        1. First, scan the entire menu for any global legends or definitions (e.g., "S = Small (105 ML)", "R = Regular (165 ML)").
+        2. **If a legend is found**, apply these definitions consistently across ALL extracted items. For example, if you find an option named "S", you MUST use the full name from the legend (e.g., "S (105 ML)").
+        3. **If no legend is found**, use the option names exactly as they appear on the menu (e.g., "Small", "Large").
+        4. For the "description" field: Only include a description if it is explicitly written on the menu for that specific item. If there is no description, the value MUST be null. Do not invent descriptions.
+
         Each item in the "menu_items" list should have the following structure:
         - "name": The name of the menu item (e.g., "Margherita Pizza").
-        - "description": A brief description, if available.
+        - "description": A brief description of the item. See critical instructions above.
         - "price": The base price of the item. If the item has different sizes/options, set this to 0.
-        - "options": A list of different sizes or choices for the item (e.g., "Small", "Medium", "Large"). Each option should have "name" and "price".
-        - "addons": A list of extras that can be added (e.g., "Extra Cheese"). Each addon should include "name", "description", and "price".
+        - "options": A list of different sizes or choices for the item. Each option must have "name" and "price".
+        - "addons": A list of extras that can be added. Each addon must include "name", "description", and "price".
         - "tags": A list of relevant tags (e.g., "Vegetarian", "Spicy").
         - "allergens": A list of potential allergens mentioned.
         
-        Example for a pizza:
+        Example for a menu that has a size legend and also items without one:
         {
-          "name": "Classic Pepperoni",
-          "description": "A classic pizza with pepperoni and mozzarella.",
+          "name": "Mocha",
+          "description": "A rich and creamy coffee drink.",
           "price": 0,
           "options": [
-            {"name": "Small", "price": 12.99},
-            {"name": "Large", "price": 16.99}
+            {"name": "S (105 ML)", "price": 200.00},
+            {"name": "R (165 ML)", "price": 230.00}
           ],
-          "addons": [
-            {"name": "Extra Cheese", "description": "Add more cheese", "price": 2.50}
-          ]
+          "addons": []
+        },
+        {
+          "name": "Pepperoni Pizza",
+          "description": null,
+          "price": 0,
+          "options": [
+            {"name": "Small", "price": 12.00},
+            {"name": "Large", "price": 16.00}
+          ],
+          "addons": []
         }
         """
 
