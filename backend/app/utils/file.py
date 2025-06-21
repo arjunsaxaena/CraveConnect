@@ -2,11 +2,9 @@ from fastapi import UploadFile
 import os
 import shutil
 import uuid
-from app.core.config import Settings
 import logging
-
+from app.core.config import settings
 logging.basicConfig(level=logging.INFO)
-settings = Settings()
 
 def save_file(file: UploadFile) -> str:
     os.makedirs(settings.UPLOADS_DIR, exist_ok=True)

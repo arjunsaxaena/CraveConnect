@@ -1,17 +1,20 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File as FastAPIFile
 from sqlalchemy.orm import Session
-from app.repositories.repository import FileRepository, UserRepository
+from app.repositories.repository import FileRepository, UserRepository, RestaurantRepository
 from app.models.file import File, validate_file
-from app.models.filters import GetFileFilters
+from app.models.filters import GetFileFilters, GetRestaurantFilters
 from app.core.responses import SuccessResponse, ErrorResponse
 from app.db.session import get_db
 from app.core.errors import NotFoundError, BadRequestError
 from app.schemas.file import FileCreate, FileUpdate, FileListResponse, FileSingleResponse, FileCreateForm
 from app.utils.file import save_file
+from app.utils.ocr import process_menu_image
+from app.models.enums import FileTypes
 
 router = APIRouter(prefix="/files", tags=["files"])
 file_repo = FileRepository()
 user_repo = UserRepository()
+restaurant_repo = RestaurantRepository()
 
 @router.get("/", response_model=FileListResponse)
 def get_files(filters: GetFileFilters = Depends(), db: Session = Depends(get_db)):
@@ -38,7 +41,19 @@ def create_file(db: Session = Depends(get_db), file: UploadFile = FastAPIFile(..
         if not user:
             raise NotFoundError(f"User {file_data.uploaded_by} not found")
 
+        restaurant = None
+        if form_data.file_type == FileTypes.MENU or form_data.file_type == FileTypes.RESTAURANT_LOGO:
+            restaurant_filter = GetRestaurantFilters(owner_id=file_data.uploaded_by)
+            restaurants = restaurant_repo.get(db, filters=restaurant_filter)
+            if not restaurants:
+                raise NotFoundError(f"Restaurant for user {file_data.uploaded_by} not found")
+            restaurant = restaurants[0]
+
         created = file_repo.create(db, obj_in=file_data)
+
+        if form_data.file_type == FileTypes.MENU and restaurant and restaurant.id:
+            process_menu_image(db=db, file_path=file_path, restaurant_id=restaurant.id)
+
         return FileSingleResponse(data=created, message="File created successfully")
     except HTTPException as e:
         raise e

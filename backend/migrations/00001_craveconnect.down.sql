@@ -1,0 +1,28 @@
+drop table if exists notifications;
+drop table if exists payments;
+drop table if exists user_preferences;
+drop table if exists menu_item_embeddings;
+drop table if exists recommendations;
+drop table if exists files;
+drop table if exists reviews;
+drop table if exists order_assignments;
+drop table if exists delivery_persons;
+drop table if exists queries;
+drop table if exists orders;
+drop table if exists promotions;
+drop table if exists favorites;
+drop table if exists menu_item_addons;
+drop table if exists addons;
+drop table if exists menu_item_options;
+drop table if exists menu_items;
+drop table if exists restaurants;
+drop table if exists users;
+
+drop type if exists spice_tolerance;
+drop type if exists payment_status;
+drop type if exists file_type;
+drop type if exists vehicle_type;
+drop type if exists auth_provider;
+
+drop extension if exists pgcrypto;
+drop extension if exists vector; 

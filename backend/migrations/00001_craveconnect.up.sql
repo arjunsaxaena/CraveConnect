@@ -3,15 +3,15 @@ create extension if not exists pgcrypto;
 
 
 
-create type auth_provider as enum ('google', 'apple', 'phone');
+create type auth_provider as enum ('GOOGLE', 'APPLE', 'PHONE');
 
-create type vehicle_type as enum ('bike', 'car', 'scooter', 'bicycle');
+create type vehicle_type as enum ('BIKE', 'CAR', 'SCOOTER', 'BICYCLE');
 
-create type file_type as enum ('menu', 'profile_image', 'vehicle_image', 'restaurant_logo', 'other');
+create type file_type as enum ('MENU', 'PROFILE_IMAGE', 'VEHICLE_IMAGE', 'RESTAURANT_LOGO', 'OTHER');
 
-create type payment_status as enum ('initiated', 'success', 'failed', 'refunded');
+create type payment_status as enum ('INITIATED', 'SUCCESS', 'FAILED', 'REFUNDED');
 
-create type spice_tolerance as enum ('low', 'medium', 'high');
+create type spice_tolerance as enum ('LOW', 'MEDIUM', 'HIGH');
 
 
 

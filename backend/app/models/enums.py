@@ -1,30 +1,30 @@
-import enum
+from enum import Enum
 
-class FileTypes(enum.Enum):
-    menu = 'menu'
-    profile_image = 'profile_image'
-    vehicle_image = 'vehicle_image'
-    restaurant_logo = 'restaurant_logo'
-    other = 'other'
+class FileTypes(str, Enum):
+    MENU = "menu"
+    PROFILE_IMAGE = "profile_image"
+    VEHICLE_IMAGE = "vehicle_image"
+    RESTAURANT_LOGO = "restaurant_logo"
+    OTHER = "other"
 
-class PaymentStatus(enum.Enum):
-    initiated = 'initiated'
-    success = 'success'
-    failed = 'failed'
-    refunded = 'refunded'
+class AuthProvider(str, Enum):
+    GOOGLE = "google.com"
+    APPLE = "apple"
+    PHONE = "phone"
 
-class VehicleType(enum.Enum):
-    bike = 'bike'
-    car = 'car'
-    scooter = 'scooter'
-    bicycle = 'bicycle'
+class VehicleType(str, Enum):
+    BIKE = "bike"
+    CAR = "car"
+    SCOOTER = "scooter"
+    BICYCLE = "bicycle"
 
-class AuthProvider(enum.Enum):
-    google = 'google'
-    apple = 'apple'
-    phone = 'phone' 
+class PaymentStatus(str, Enum):
+    INITIATED = "initiated"
+    SUCCESS = "success"
+    FAILED = "failed"
+    REFUNDED = "refunded"
 
-class SpiceTolerance(enum.Enum):
-    low = 'low'
-    medium = 'medium'
-    high = 'high'
+class SpiceTolerance(str, Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"

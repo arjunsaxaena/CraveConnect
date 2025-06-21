@@ -10,3 +10,4 @@ google-generativeai
 pydantic
 pgvector 
 python-dotenv
+google-generativeai
