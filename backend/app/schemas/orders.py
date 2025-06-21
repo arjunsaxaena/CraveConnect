@@ -1,5 +1,6 @@
 from pydantic import BaseModel
 from typing import Optional, List
+from uuid import UUID
 
 class OrderCreate(BaseModel):
     user_id: str
@@ -12,9 +13,9 @@ class OrderUpdate(BaseModel):
     meta: Optional[dict] = None
 
 class OrderOut(BaseModel):
-    id: str
-    user_id: str
-    restaurant_id: str
+    id: UUID
+    user_id: UUID
+    restaurant_id: UUID
     total_price: float
     meta: Optional[dict] = None
 
