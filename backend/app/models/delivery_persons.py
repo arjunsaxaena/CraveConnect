@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, Enum, DateTime, JSON, func, UniqueConstraint
+from sqlalchemy import Column, String, Enum, DateTime, JSON, func, UniqueConstraint, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from app.db.base import Base
 from .enums import VehicleType
@@ -12,6 +12,7 @@ class DeliveryPerson(Base):
     __table_args__ = (UniqueConstraint('phone_number', name='uq_delivery_person_phone_number'),)
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    user_id = Column(UUID(as_uuid=True), ForeignKey('users.id'), nullable=False)
     name = Column(String, nullable=False)
     phone_number = Column(String, nullable=False, unique=True)
     vehicle_details = Column(String, nullable=True)

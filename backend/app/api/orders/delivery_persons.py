@@ -47,10 +47,13 @@ def update_delivery_person(delivery_person_id: str = Query(...), delivery_person
     if "name" in update_data and update_data["name"] != delivery_person.name:
         raise BadRequestError("Name cannot be updated")
 
-    updated = delivery_person_repo.update(db, id=delivery_person_id, obj_in=update_data)
+    updated = delivery_person_repo.update(db, db_obj=delivery_person, obj_in=delivery_person_in)
     return DeliveryPersonSingleResponse(data=updated, message="Delivery person updated successfully")
 
 @router.delete("/{delivery_person_id}", response_model=SuccessResponse, responses={404: {"model": ErrorResponse}})
 def delete_delivery_person(delivery_person_id: str, db: Session = Depends(get_db)):
+    delivery_person = delivery_person_repo.get(db, id=delivery_person_id)
+    if not delivery_person:
+        raise NotFoundError(f"Delivery person {delivery_person_id} not found")
     delivery_person_repo.delete(db, id=delivery_person_id)
     return SuccessResponse(message="Delivery person deleted successfully")

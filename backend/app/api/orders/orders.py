@@ -52,10 +52,13 @@ def update_order(order_id: str = Query(...), order_in: OrderUpdate = None, db: S
     if "total_price" in update_data and update_data["total_price"] != order.total_price:
         raise BadRequestError("Total price cannot be updated")
 
-    updated = order_repo.update(db, id=order_id, obj_in=update_data)
+    updated = order_repo.update(db, db_obj=order, obj_in=order_in)
     return OrderSingleResponse(data=updated, message="Order updated successfully")
 
 @router.delete("/{order_id}", response_model=SuccessResponse, responses={404: {"model": ErrorResponse}})
 def delete_order(order_id: str, db: Session = Depends(get_db)):
+    order = order_repo.get(db, id=order_id)
+    if not order:
+        raise NotFoundError(f"Order {order_id} not found")
     order_repo.delete(db, id=order_id)
     return SuccessResponse(message="Order deleted successfully")
