@@ -3,7 +3,7 @@ from app.api.user.handler import router as user_router
 from app.api.restaurant.handler import router as restaurant_router
 from app.api.menu.handler import router as menu_router
 from app.api.orders.handler import router as orders_router
-
+from app.api.files.handler import router as file_router
 app = FastAPI()
 
 ROUTERS = [
@@ -11,6 +11,7 @@ ROUTERS = [
     restaurant_router,
     menu_router,
     orders_router,
+    file_router,
 ]
 
 for router in ROUTERS:

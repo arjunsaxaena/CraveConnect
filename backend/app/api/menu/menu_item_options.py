@@ -1,19 +1,19 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from app.repositories.repository import MenuItemOptionRepository, MenuItemRepository
-from app.models.menu_item_options import MenuItemOption, validate_menu_item_option
-from app.models.filters import GetMenuItemOptionFilters
+from app.repositories.repository import MenuItemOptionsRepository, MenuItemRepository
+from app.models.menu_item_options import MenuItemOptions, validate_menu_item_options
+from app.models.filters import GetMenuItemOptionsFilters
 from app.core.responses import SuccessResponse, ErrorResponse
 from app.db.session import get_db
 from app.core.errors import NotFoundError, BadRequestError
 from app.schemas.menu_item_options import MenuItemOptionCreate, MenuItemOptionUpdate, MenuItemOptionListResponse, MenuItemOptionSingleResponse
 
 router = APIRouter(prefix="/menu_item_options", tags=["menu_item_options"])
-menu_item_option_repo = MenuItemOptionRepository()
+menu_item_option_repo = MenuItemOptionsRepository()
 menu_item_repo = MenuItemRepository()
 
 @router.get("/", response_model=MenuItemOptionListResponse)
-def get_menu_item_options(filters: GetMenuItemOptionFilters = Depends(), db: Session = Depends(get_db)):
+def get_menu_item_options(filters: GetMenuItemOptionsFilters = Depends(), db: Session = Depends(get_db)):
     menu_item_options = menu_item_option_repo.get(db, filters=filters)
     if not menu_item_options:
         raise NotFoundError("No menu item options found")
@@ -22,8 +22,8 @@ def get_menu_item_options(filters: GetMenuItemOptionFilters = Depends(), db: Ses
 @router.post("/", response_model=MenuItemOptionSingleResponse, status_code=status.HTTP_201_CREATED)
 def create_menu_item_option(menu_item_option: MenuItemOptionCreate, db: Session = Depends(get_db)):
     try:
-        menu_item_option_obj = MenuItemOption(**menu_item_option.dict())
-        validate_menu_item_option(menu_item_option_obj)
+        menu_item_option_obj = MenuItemOptions(**menu_item_option.dict())
+        validate_menu_item_options(menu_item_option_obj)
 
         menu_item = menu_item_repo.get(db, id=menu_item_option.menu_item_id)
         if not menu_item:
