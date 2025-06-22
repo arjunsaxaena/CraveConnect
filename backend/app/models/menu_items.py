@@ -1,5 +1,6 @@
 from sqlalchemy import Column, String, DateTime, ARRAY, JSON, func, ForeignKey, Numeric
 from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.orm import relationship
 from app.db.base import Base
 import uuid
 from app.db.tables import Tables
@@ -19,6 +20,9 @@ class MenuItem(Base):
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     meta = Column(JSON, nullable=True, default={})
+
+    options = relationship("MenuItemOptions", backref="menu_item", lazy="dynamic")
+    addons = relationship("MenuItemAddons", backref="menu_item", lazy="dynamic")
 
 
 def validate_menu_item(menu_item: MenuItem):

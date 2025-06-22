@@ -1,6 +1,8 @@
 from pydantic import BaseModel
 from typing import Optional, List
 from uuid import UUID
+from .menu_item_options import MenuItemOptionOut
+from .menu_item_addons import MenuItemAddonsOut
 
 class MenuItemCreate(BaseModel):
     restaurant_id: UUID
@@ -28,6 +30,8 @@ class MenuItemOut(BaseModel):
     tags: Optional[List[str]] = None
     allergens: Optional[List[str]] = None
     meta: Optional[dict] = None
+    options: List[MenuItemOptionOut] = []
+    addons: List[MenuItemAddonsOut] = []
 
     model_config = {
         "from_attributes": True
