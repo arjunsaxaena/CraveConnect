@@ -97,13 +97,16 @@ def process_menu_image(db: Session, file_path: str, restaurant_id: UUID):
                 restaurant_id=restaurant_id,
                 name=item_data["name"],
                 description=item_data.get("description"),
-                price=item_data["price"],
                 tags=item_data.get("tags"),
                 allergens=item_data.get("allergens")
             )
             menu_item = menu_item_repo.create(db, obj_in=menu_item_create)
 
-            for option_data in item_data.get("options", []):
+            options_data = item_data.get("options", [])
+            if not options_data and "price" in item_data:
+                options_data = [{"name": "Regular", "price": item_data["price"]}]
+
+            for option_data in options_data:
                 option_create = MenuItemOptionCreate(
                     menu_item_id=menu_item.id,
                     name=option_data["name"],

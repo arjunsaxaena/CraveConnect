@@ -8,7 +8,6 @@ class MenuItemCreate(BaseModel):
     restaurant_id: UUID
     name: str
     description: Optional[str] = None
-    price: float
     tags: Optional[List[str]] = None
     allergens: Optional[List[str]] = None
     meta: Optional[dict] = None
@@ -16,7 +15,6 @@ class MenuItemCreate(BaseModel):
 class MenuItemUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
-    price: Optional[float] = None
     tags: Optional[List[str]] = None
     allergens: Optional[List[str]] = None
     meta: Optional[dict] = None
@@ -26,7 +24,6 @@ class MenuItemOut(BaseModel):
     restaurant_id: UUID
     name: str
     description: Optional[str] = None
-    price: float
     tags: Optional[List[str]] = None
     allergens: Optional[List[str]] = None
     meta: Optional[dict] = None

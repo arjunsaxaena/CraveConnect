@@ -1,4 +1,4 @@
-from sqlalchemy import Column, String, DateTime, ARRAY, JSON, func, ForeignKey, Numeric
+from sqlalchemy import Column, String, DateTime, ARRAY, JSON, func, ForeignKey
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.db.base import Base
@@ -14,7 +14,6 @@ class MenuItem(Base):
     restaurant_id = Column(UUID(as_uuid=True), ForeignKey('restaurants.id'), nullable=False)
     name = Column(String, nullable=False)
     description = Column(String, nullable=True)
-    price = Column(Numeric(10, 2), nullable=False)
     tags = Column(ARRAY(String), nullable=True)
     allergens = Column(ARRAY(String), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
@@ -31,8 +30,5 @@ def validate_menu_item(menu_item: MenuItem):
 
     if menu_item.name is None or menu_item.name == "":
         raise errors.BadRequestError("Name must be provided")
-
-    if menu_item.price is None or menu_item.price <= 0:
-        raise errors.BadRequestError("Price must be provided and greater than 0")
 
     return menu_item
