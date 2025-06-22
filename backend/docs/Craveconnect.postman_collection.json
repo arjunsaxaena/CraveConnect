@@ -1,0 +1,1116 @@
+{
+	"info": {
+		"_postman_id": "efd6e160-3a8b-4939-9f01-31d7ff3b7c27",
+		"name": "Craveconnect",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "39713995"
+	},
+	"item": [
+		{
+			"name": "users",
+			"item": [
+				{
+					"name": "user-preferences",
+					"item": [
+						{
+							"name": "get-user-preferences",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:4001/v1/api/user-preferences",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "4001",
+									"path": [
+										"v1",
+										"api",
+										"user-preferences"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "create-user-preferences",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"user_id\": \"d68a73ff-8576-467d-8453-84532f5fe9dc\",\n  \"preferred_cuisines\": [\"italian\", \"mexican\", \"indian\"],\n  \"dietary_restrictions\": [\"vegetarian\", \"gluten_free\"],\n  \"spice_tolerance\": \"medium\",\n  \"allergies\": [\"peanuts\", \"shellfish\"]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:4001/v1/api/user-preferences",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "4001",
+									"path": [
+										"v1",
+										"api",
+										"user-preferences"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "update-user-preferences",
+							"request": {
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"spice_tolerance\": \"high\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:4001/v1/api/user-preferences/?user_id=d68a73ff-8576-467d-8453-84532f5fe9dc",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "4001",
+									"path": [
+										"v1",
+										"api",
+										"user-preferences",
+										""
+									],
+									"query": [
+										{
+											"key": "user_id",
+											"value": "d68a73ff-8576-467d-8453-84532f5fe9dc"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "delete-user-preferences",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:4001/v1/api/user-preferences/d68a73ff-8576-467d-8453-84532f5fe9dc",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "4001",
+									"path": [
+										"v1",
+										"api",
+										"user-preferences",
+										"d68a73ff-8576-467d-8453-84532f5fe9dc"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "users",
+					"item": [
+						{
+							"name": "get-users",
+							"request": {
+								"auth": {
+									"type": "noauth"
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{domain}}/v1/api/users/",
+									"host": [
+										"{{domain}}"
+									],
+									"path": [
+										"v1",
+										"api",
+										"users",
+										""
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "create-users",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Arjun Saxena\",\n  \"email\": \"arjunsaxena04@gmail.com\",\n  \"provider\": \"google.com\",\n  \"address\": {\n    \"street\": \"1114, sector 46-B\",\n    \"city\": \"Chandigarh\",\n    \"state\": \"Chandigarh\",\n    \"pincode\": 160047,\n    \"latitude\": 30.7333,\n    \"longitude\": 76.7794\n  }\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:4001/v1/api/users",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "4001",
+									"path": [
+										"v1",
+										"api",
+										"users"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "update-user",
+							"request": {
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Arjun Saxena\",\n  \"id\": \"d8747840-2ed5-49a3-8d86-ccfc059f6746\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:4001/v1/api/users/?user_id=d68a73ff-8576-467d-8453-84532f5fe9dc",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "4001",
+									"path": [
+										"v1",
+										"api",
+										"users",
+										""
+									],
+									"query": [
+										{
+											"key": "user_id",
+											"value": "d68a73ff-8576-467d-8453-84532f5fe9dc"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "delete-user",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:4001/v1/api/users/d31d4062-c330-4b23-9478-fa3bd9a08021",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "4001",
+									"path": [
+										"v1",
+										"api",
+										"users",
+										"d31d4062-c330-4b23-9478-fa3bd9a08021"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "reviews",
+					"item": [
+						{
+							"name": "get-reviews",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{domain}}/v1/api/reviews",
+									"host": [
+										"{{domain}}"
+									],
+									"path": [
+										"v1",
+										"api",
+										"reviews"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "create-reviews",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"user_id\": \"d68a73ff-8576-467d-8453-84532f5fe9dc\",\n  \"restaurant_id\": \"baea0abd-5077-4eb6-9277-4c601a4cdc12\",\n  \"rating\": 5,\n  \"comment\": \"This place was amazing! The food was delicious and the service was excellent. I will definitely be coming back.\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{domain}}/v1/api/reviews/",
+									"host": [
+										"{{domain}}"
+									],
+									"path": [
+										"v1",
+										"api",
+										"reviews",
+										""
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "update-review",
+							"request": {
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"rating\": 3\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{domain}}/v1/api/reviews/?review_id=79fedab5-bb1d-42a0-9a2b-14ab902dad6d",
+									"host": [
+										"{{domain}}"
+									],
+									"path": [
+										"v1",
+										"api",
+										"reviews",
+										""
+									],
+									"query": [
+										{
+											"key": "review_id",
+											"value": "79fedab5-bb1d-42a0-9a2b-14ab902dad6d"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "delete-review",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{domain}}/v1/api/reviews/79fedab5-bb1d-42a0-9a2b-14ab902dad6d",
+									"host": [
+										"{{domain}}"
+									],
+									"path": [
+										"v1",
+										"api",
+										"reviews",
+										"79fedab5-bb1d-42a0-9a2b-14ab902dad6d"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "restaurant",
+			"item": [
+				{
+					"name": "restaurant",
+					"item": [
+						{
+							"name": "get-restaruant",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{domain}}/v1/api/restaurant",
+									"host": [
+										"{{domain}}"
+									],
+									"path": [
+										"v1",
+										"api",
+										"restaurant"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "create-restaurant",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"The Hungry Coder\",\n  \"address\": {\n    \"street\": \"123 Python Lane\",\n    \"city\": \"Codeville\",\n    \"zip\": \"12345\"\n  },\n  \"owner_id\": \"e87fa04c-bb21-482d-abd7-503583a40bef\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:4001/v1/api/restaurant",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "4001",
+									"path": [
+										"v1",
+										"api",
+										"restaurant"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "update-restaurant",
+							"request": {
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"address\": {\n    \"street\": \"123 Python Lane updated\",\n    \"city\": \"Codeville\",\n    \"zip\": \"12345\"\n  },\n  \"owner_id\": \"d68a73ff-8576-467d-8453-84532f5fe9dc\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:4001/v1/api/restaurant/?restaurant_id=07e8013f-763b-42ee-838b-073c51d166b6",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "4001",
+									"path": [
+										"v1",
+										"api",
+										"restaurant",
+										""
+									],
+									"query": [
+										{
+											"key": "restaurant_id",
+											"value": "07e8013f-763b-42ee-838b-073c51d166b6"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "delete-restaurant",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"address\": {\n    \"street\": \"123 Python Lane updated\",\n    \"city\": \"Codeville\",\n    \"zip\": \"12345\"\n  },\n  \"owner_id\": \"d68a73ff-8576-467d-8453-84532f5fe9dc\"\n}"
+								},
+								"url": {
+									"raw": "http://localhost:4001/v1/api/restaurant/07e8013f-763b-42ee-838b-073c51d166b6",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "4001",
+									"path": [
+										"v1",
+										"api",
+										"restaurant",
+										"07e8013f-763b-42ee-838b-073c51d166b6"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "promotions",
+					"item": [
+						{
+							"name": "get-promotions",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:4001/v1/api/promotions/",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "4001",
+									"path": [
+										"v1",
+										"api",
+										"promotions",
+										""
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "create-promotions",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"restaurant_id\": \"baea0abd-5077-4eb6-9277-4c601a4cdc12\",\n  \"title\": \"Summer Special\",\n  \"description\": \"Get 20% off on all items this summer!\",\n  \"discount_percent\": 20.0,\n  \"valid_from\": \"2024-07-01T00:00:00Z\",\n  \"valid_to\": \"2024-07-31T23:59:59Z\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:4001/v1/api/promotions/",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "4001",
+									"path": [
+										"v1",
+										"api",
+										"promotions",
+										""
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "update-promotions",
+							"request": {
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n//   \"restaurant_id\": \"baea0abd-5077-4eb6-9277-4c601a4cdc12\",\n  \"title\": \"Summer Special updated\",\n  \"description\": \"Get 50% off on all items this summer!\",\n  \"discount_percent\": 50.0,\n  \"valid_from\": \"2024-07-01T00:00:00Z\",\n  \"valid_to\": \"2024-07-31T23:59:59Z\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "http://localhost:4001/v1/api/promotions/?promotion_id=4f3f7ccc-1cf0-4851-891d-c7bcf931fb51",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "4001",
+									"path": [
+										"v1",
+										"api",
+										"promotions",
+										""
+									],
+									"query": [
+										{
+											"key": "promotion_id",
+											"value": "4f3f7ccc-1cf0-4851-891d-c7bcf931fb51"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "delete-promotions",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "http://localhost:4001/v1/api/promotions/4f3f7ccc-1cf0-4851-891d-c7bcf931fb51",
+									"protocol": "http",
+									"host": [
+										"localhost"
+									],
+									"port": "4001",
+									"path": [
+										"v1",
+										"api",
+										"promotions",
+										"4f3f7ccc-1cf0-4851-891d-c7bcf931fb51"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "menu-items",
+			"item": [
+				{
+					"name": "addons",
+					"item": [
+						{
+							"name": "get-addons",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{domain}}/v1/api/addons",
+									"host": [
+										"{{domain}}"
+									],
+									"path": [
+										"v1",
+										"api",
+										"addons"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "create-addons",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Extra Cheese\",\n  \"description\": \"Add extra cheese to your meal\",\n  \"price\": 50\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{domain}}/v1/api/addons",
+									"host": [
+										"{{domain}}"
+									],
+									"path": [
+										"v1",
+										"api",
+										"addons"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "update-addons",
+							"request": {
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"price\": 100\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{domain}}/v1/api/addons/?addon_id=dd824e74-559c-43ac-8c7b-ed3dc796e626",
+									"host": [
+										"{{domain}}"
+									],
+									"path": [
+										"v1",
+										"api",
+										"addons",
+										""
+									],
+									"query": [
+										{
+											"key": "addon_id",
+											"value": "dd824e74-559c-43ac-8c7b-ed3dc796e626"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "delete-addons",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{domain}}/v1/api/addons/dd824e74-559c-43ac-8c7b-ed3dc796e626",
+									"host": [
+										"{{domain}}"
+									],
+									"path": [
+										"v1",
+										"api",
+										"addons",
+										"dd824e74-559c-43ac-8c7b-ed3dc796e626"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "menu-items",
+					"item": [
+						{
+							"name": "get-menu-items",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{domain}}/v1/api/menu_items/",
+									"host": [
+										"{{domain}}"
+									],
+									"path": [
+										"v1",
+										"api",
+										"menu_items",
+										""
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "create-menu-items",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"restaurant_id\": \"baea0abd-5077-4eb6-9277-4c601a4cdc12\",\n  \"name\": \"Gourmet Burger\",\n  \"description\": \"1/2 lb. Angus beef patty, with caramelized onions, aged cheddar, and a brioche bun.\",\n  \"price\": 250,\n  \"tags\": [\"burger\", \"beef\", \"gourmet\"],\n  \"allergens\": [\"gluten\", \"dairy\"]\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{domain}}/v1/api/menu_items/",
+									"host": [
+										"{{domain}}"
+									],
+									"path": [
+										"v1",
+										"api",
+										"menu_items",
+										""
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "update-menu-items",
+							"request": {
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Not Gourmet Burger\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{domain}}/v1/api/menu_items/?menu_item_id=789fe11e-5fa4-4bcc-b1b8-7f002d0b56d2",
+									"host": [
+										"{{domain}}"
+									],
+									"path": [
+										"v1",
+										"api",
+										"menu_items",
+										""
+									],
+									"query": [
+										{
+											"key": "menu_item_id",
+											"value": "789fe11e-5fa4-4bcc-b1b8-7f002d0b56d2"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "delete-menu-items",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{domain}}/v1/api/menu_items/789fe11e-5fa4-4bcc-b1b8-7f002d0b56d2",
+									"host": [
+										"{{domain}}"
+									],
+									"path": [
+										"v1",
+										"api",
+										"menu_items",
+										"789fe11e-5fa4-4bcc-b1b8-7f002d0b56d2"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "orders",
+			"item": [
+				{
+					"name": "orders",
+					"item": [
+						{
+							"name": "get-orders",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Not Gourmet Burger\"\n}"
+								},
+								"url": {
+									"raw": "{{domain}}/v1/api/orders",
+									"host": [
+										"{{domain}}"
+									],
+									"path": [
+										"v1",
+										"api",
+										"orders"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "create-orders",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"user_id\": \"d68a73ff-8576-467d-8453-84532f5fe9dc\",\n  \"restaurant_id\": \"baea0abd-5077-4eb6-9277-4c601a4cdc12\",\n  \"total_price\": 123.45,\n  \"meta\": {\n    \"items\": [\n      {\n        \"name\": \"Pizza\",\n        \"quantity\": 1,\n        \"price\": 99.99\n      },\n      {\n        \"name\": \"Coke\",\n        \"quantity\": 2,\n        \"price\": 11.73\n      }\n    ]\n  }\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{domain}}/v1/api/orders",
+									"host": [
+										"{{domain}}"
+									],
+									"path": [
+										"v1",
+										"api",
+										"orders"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "update-orders",
+							"request": {
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n//   \"user_id\": \"d68a73ff-8576-467d-8453-84532f5fe9dc\",\n//   \"restaurant_id\": \"baea0abd-5077-4eb6-9277-4c601a4cdc12\",\n//   \"total_price\": 123.45,\n  \"meta\": {\n    \"items\": [\n      {\n        \"name\": \"Burger\",\n        \"quantity\": 1,\n        \"price\": 99.99\n      },\n      {\n        \"name\": \"Coke\",\n        \"quantity\": 2,\n        \"price\": 11.73\n      }\n    ]\n  }\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{domain}}/v1/api/orders/?order_id=befbd147-40ef-4f65-b53e-653bc19c9d4d",
+									"host": [
+										"{{domain}}"
+									],
+									"path": [
+										"v1",
+										"api",
+										"orders",
+										""
+									],
+									"query": [
+										{
+											"key": "order_id",
+											"value": "befbd147-40ef-4f65-b53e-653bc19c9d4d"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "delete-orders",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{domain}}/v1/api/orders/befbd147-40ef-4f65-b53e-653bc19c9d4d",
+									"host": [
+										"{{domain}}"
+									],
+									"path": [
+										"v1",
+										"api",
+										"orders",
+										"befbd147-40ef-4f65-b53e-653bc19c9d4d"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "delivery-persons",
+					"item": [
+						{
+							"name": "get-delivery-persons",
+							"protocolProfileBehavior": {
+								"disableBodyPruning": true
+							},
+							"request": {
+								"method": "GET",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"name\": \"Not Gourmet Burger\"\n}"
+								},
+								"url": {
+									"raw": "{{domain}}/v1/api/delivery_persons",
+									"host": [
+										"{{domain}}"
+									],
+									"path": [
+										"v1",
+										"api",
+										"delivery_persons"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "create-delivery-persons",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    \"name\": \"John Doe\",\n    \"user_id\": \"d68a73ff-8576-467d-8453-84532f5fe9dc\",\n    \"phone_number\": \"0819879990\",\n    \"vehicle_type\": \"car\",\n    \"vehicle_details\": \"Toyota Prius - ABC 123\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{domain}}/v1/api/delivery_persons/",
+									"host": [
+										"{{domain}}"
+									],
+									"path": [
+										"v1",
+										"api",
+										"delivery_persons",
+										""
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "update-delivery-persons",
+							"request": {
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n    // \"name\": \"John Doe\",\n    // \"user_id\": \"d68a73ff-8576-467d-8453-84532f5fe9dc\",\n    // \"phone_number\": \"0819879990\",\n    \"vehicle_type\": \"bike\",\n    \"vehicle_details\": \"Splender\"\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{domain}}/v1/api/delivery_persons/?delivery_person_id=f4bf8004-ed6b-49d5-a069-0abb49dc2392",
+									"host": [
+										"{{domain}}"
+									],
+									"path": [
+										"v1",
+										"api",
+										"delivery_persons",
+										""
+									],
+									"query": [
+										{
+											"key": "delivery_person_id",
+											"value": "f4bf8004-ed6b-49d5-a069-0abb49dc2392"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "delete-delivery-persons",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{domain}}/v1/api/delivery_persons/f4bf8004-ed6b-49d5-a069-0abb49dc2392",
+									"host": [
+										"{{domain}}"
+									],
+									"path": [
+										"v1",
+										"api",
+										"delivery_persons",
+										"f4bf8004-ed6b-49d5-a069-0abb49dc2392"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				}
+			]
+		},
+		{
+			"name": "files",
+			"item": [
+				{
+					"name": "get-files",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{domain}}/v1/api/files",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"v1",
+								"api",
+								"files"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "create-files",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "formdata",
+							"formdata": [
+								{
+									"key": "file",
+									"type": "file",
+									"src": "/home/wendigo/Pictures/Menu/dialog.jpeg"
+								},
+								{
+									"key": "file_type",
+									"value": "menu",
+									"type": "text"
+								},
+								{
+									"key": "uploaded_by",
+									"value": "e87fa04c-bb21-482d-abd7-503583a40bef",
+									"type": "text"
+								}
+							]
+						},
+						"url": {
+							"raw": "{{domain}}/v1/api/files/",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"v1",
+								"api",
+								"files",
+								""
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		}
+	]
+}
