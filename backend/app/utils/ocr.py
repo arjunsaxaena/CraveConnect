@@ -17,6 +17,7 @@ import logging
 from app.core.config import settings
 import google.generativeai as genai
 import json
+from app.models.filters import GetMenuItemFilters
 
 genai.configure(api_key=settings.GEMINI_API_KEY)
 
@@ -25,45 +26,82 @@ def extract_menu_data_from_image(file_path: str) -> dict:
         img = Image.open(file_path)
         
         prompt = """
-        Analyze the menu image provided and extract all menu items.
-        Return the data as a valid JSON object with a single key: "menu_items".
+        Analyze the menu image provided and extract all menu items and global addons.
+        Return the data as a valid JSON object with two keys: "menu_items" and "global_addons".
         
         **CRITICAL INSTRUCTIONS:**
-        1. First, scan the entire menu for any global legends or definitions (e.g., "S = Small (105 ML)", "R = Regular (165 ML)").
-        2. **If a legend is found**, apply these definitions consistently across ALL extracted items. For example, if you find an option named "S", you MUST use the full name from the legend (e.g., "S (105 ML)").
-        3. **If no legend is found**, use the option names exactly as they appear on the menu (e.g., "Small", "Large").
-        4. For the "description" field: Only include a description if it is explicitly written on the menu for that specific item. If there is no description, the value MUST be null. Do not invent descriptions.
-
-        Each item in the "menu_items" list should have the following structure:
-        - "name": The name of the menu item (e.g., "Margherita Pizza").
-        - "description": A brief description of the item. See critical instructions above.
-        - "price": The base price of the item. If the item has different sizes/options, set this to 0.
-        - "options": A list of different sizes or choices for the item. Each option must have "name" and "price".
-        - "addons": A list of extras that can be added. Each addon must include "name", "description", and "price".
-        - "tags": A list of relevant tags (e.g., "Vegetarian", "Spicy").
-        - "allergens": A list of potential allergens mentioned.
+        1. First, scan the entire menu for:
+           - Size legends or definitions (e.g., "S = Small (105 ML)", "R = Regular (165 ML)")
+           - Global add-ons that apply to multiple items (e.g., extra toppings, extra cheese)
+           - Pizza base upgrades or modifications (e.g., "Upgrade to Cheese Burst", "Make it C4 Cheezilicious")
+           - Any sections starting with phrases like "Upgrade any pizza to", "Add extra", "Make it", "Convert to"
         
-        Example for a menu that has a size legend and also items without one:
+        2. **IMPORTANT**: The following should ALWAYS be categorized as global_addons, NOT menu items:
+           - Any item prefixed with "Extra" (e.g., "Extra Cheese", "Extra Toppings")
+           - Any item described as an upgrade or modification (e.g., "Upgrade to Cheese Burst")
+           - Special pizza base variations (e.g., "C4 Cheezilicious", "Cheese Burst Base")
+           - Additional toppings or ingredients that can be added
+           - Any item that modifies or enhances an existing menu item
+        
+        3. **If a legend is found**, apply these definitions consistently across ALL extracted items.
+        4. **If no legend is found**, use the option names exactly as they appear on the menu.
+        5. **IMPORTANT**: For descriptions:
+           - ALWAYS include any text in parentheses () or brackets [] after the item name as the description
+           - Include any ingredient lists or preparation methods in the description
+           - If multiple lines of description exist, combine them
+           - If no explicit description is found, set to null
+
+        The JSON structure should be:
         {
-          "name": "Mocha",
-          "description": "A rich and creamy coffee drink.",
-          "price": 0,
-          "options": [
-            {"name": "S (105 ML)", "price": 200.00},
-            {"name": "R (165 ML)", "price": 230.00}
+          "menu_items": [
+            {
+              "name": "Margherita Pizza",
+              "description": "Classic tomato sauce and mozzarella",
+              "price": 0,
+              "options": [
+                {"name": "Small", "price": 12.00},
+                {"name": "Large", "price": 16.00}
+              ],
+              "addons": [],
+              "tags": ["Vegetarian"],
+              "allergens": ["Dairy"]
+            }
           ],
-          "addons": []
-        },
-        {
-          "name": "Pepperoni Pizza",
-          "description": null,
-          "price": 0,
-          "options": [
-            {"name": "Small", "price": 12.00},
-            {"name": "Large", "price": 16.00}
-          ],
-          "addons": []
+          "global_addons": [
+            {
+              "name": "C4 Cheezilicious Upgrade",
+              "description": "Upgrade any pizza to C4 Cheezilicious base",
+              "options": [
+                {"name": "Small", "price": 2.00},
+                {"name": "Large", "price": 3.00}
+              ]
+            },
+            {
+              "name": "Cheese Burst Base",
+              "description": "Convert to cheese burst pizza",
+              "options": [
+                {"name": "Small", "price": 1.50},
+                {"name": "Large", "price": 2.50}
+              ]
+            },
+            {
+              "name": "Extra Toppings",
+              "description": "Choice of: Onion/Capsicum/Sweet Corn/Jalapenos/Red Paprika/Mushroom",
+              "options": [
+                {"name": "Small", "price": 1.00},
+                {"name": "Large", "price": 1.50}
+              ]
+            }
+          ]
         }
+        
+        Remember:
+        1. Menu items are ONLY standalone, orderable dishes (e.g., specific pizza types, drinks)
+        2. Everything that modifies or upgrades an existing item goes in global_addons
+        3. If you see phrases like "Upgrade to", "Convert to", "Make it" - those are ALWAYS addons
+        4. Pizza base variations (Cheese Burst, C4 Cheezilicious, etc.) are ALWAYS addons
+        5. Each addon should list its price options for different sizes if applicable
+        6. ALWAYS include descriptions when they appear in the menu
         """
 
         model = genai.GenerativeModel('gemini-1.5-flash')
@@ -96,9 +134,9 @@ def process_menu_image(db: Session, file_path: str, restaurant_id: UUID):
             menu_item_create = MenuItemCreate(
                 restaurant_id=restaurant_id,
                 name=item_data["name"],
-                description=item_data.get("description"),
-                tags=item_data.get("tags"),
-                allergens=item_data.get("allergens")
+                description=item_data.get("description", None),
+                tags=item_data.get("tags", []),
+                allergens=item_data.get("allergens", [])
             )
             menu_item = menu_item_repo.create(db, obj_in=menu_item_create)
 
@@ -115,18 +153,16 @@ def process_menu_image(db: Session, file_path: str, restaurant_id: UUID):
                 )
                 menu_item_option_repo.create(db, obj_in=option_create)
 
-            for addon_data in item_data.get("addons", []):
-                existing_addon = db.query(addon_repo.model).filter_by(name=addon_data["name"], price=addon_data["price"]).first()
-                if existing_addon:
-                    addon = existing_addon
-                else:
-                    addon_create = AddonsCreate(
-                        name=addon_data["name"],
-                        description=addon_data.get("description"),
-                        price=addon_data["price"]
-                    )
-                    addon = addon_repo.create(db, obj_in=addon_create)
-                
+        for addon_data in menu_data.get("global_addons", []):
+            addon_create = AddonsCreate(
+                name=addon_data["name"],
+                options=addon_data.get("options", [{"name": "Regular", "price": addon_data.get("price", 0)}])
+            )
+            addon = addon_repo.create(db, obj_in=addon_create)
+
+            filters = GetMenuItemFilters(restaurant_id=restaurant_id)
+            menu_items = menu_item_repo.get(db, filters=filters)
+            for menu_item in menu_items:
                 menu_item_addon_create = MenuItemAddonsCreate(
                     menu_item_id=menu_item.id,
                     addon_id=addon.id

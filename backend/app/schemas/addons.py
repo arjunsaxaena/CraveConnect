@@ -1,24 +1,26 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Optional, List, Dict
 from uuid import UUID
 
-class AddonsCreate(BaseModel):
+class AddonOption(BaseModel):
     name: str
     description: Optional[str] = None
     price: float
+
+class AddonsCreate(BaseModel):
+    name: str
+    options: List[AddonOption]
     meta: Optional[dict] = None
 
 class AddonsUpdate(BaseModel):
     name: Optional[str] = None
-    description: Optional[str] = None
-    price: Optional[float] = None
+    options: Optional[List[AddonOption]] = None
     meta: Optional[dict] = None
 
 class AddonsOut(BaseModel):
     id: UUID
     name: str
-    description: Optional[str] = None
-    price: float
+    options: List[AddonOption]
     meta: Optional[dict] = None
 
     model_config = {

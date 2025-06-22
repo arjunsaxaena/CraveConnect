@@ -62,17 +62,19 @@ create table menu_item_options (
 create table addons (
   id uuid primary key default gen_random_uuid(),
   name text not null,         -- e.g., 'Extra Cheese'
-  description text,
-  price numeric(10,2) not null,
+  options jsonb,
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
   meta jsonb default '{}'
 );
 
 create table menu_item_addons (
+  id uuid primary key default gen_random_uuid(),
   menu_item_id uuid references menu_items (id),
   addon_id uuid references addons (id),
-  primary key (menu_item_id, addon_id)
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  meta jsonb default '{}'
 );
 
 create table favorites (

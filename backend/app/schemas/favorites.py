@@ -13,8 +13,6 @@ class FavoritesUpdate(BaseModel):
 class FavoritesOut(BaseModel):
     user_id: UUID
     menu_item_id: UUID
-    created_at: Optional[str]
-    updated_at: Optional[str]
     meta: Optional[dict]
 
     model_config = {
