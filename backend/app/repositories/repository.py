@@ -8,7 +8,6 @@ from app.models.favorites import Favorites
 from app.models.menu_items import MenuItem
 from app.models.menu_item_addons import MenuItemAddons
 from app.models.menu_item_embedding import MenuItemEmbedding
-from app.models.menu_item_options import MenuItemOptions
 from app.models.notification import Notification
 from app.models.order_assignments import OrderAssignments
 from app.models.promotions import Promotion
@@ -56,10 +55,6 @@ class MenuItemAddonsRepository(BaseRepository):
 class MenuItemEmbeddingRepository(BaseRepository):
     def __init__(self):
         super().__init__(MenuItemEmbedding)
-
-class MenuItemOptionsRepository(BaseRepository):
-    def __init__(self):
-        super().__init__(MenuItemOptions)
 
 class NotificationRepository(BaseRepository):
     def __init__(self):

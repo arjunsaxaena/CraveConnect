@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
-from app.repositories.repository import MenuItemRepository, RestaurantRepository, MenuItemOptionsRepository, MenuItemAddonsRepository
+from app.repositories.repository import MenuItemRepository, RestaurantRepository, MenuItemAddonsRepository
 from app.models.menu_items import MenuItem, validate_menu_item
-from app.models.filters import GetMenuItemFilters, GetMenuItemOptionsFilters, GetMenuItemAddonsFilters
+from app.models.filters import GetMenuItemFilters, GetMenuItemAddonsFilters
 from app.core.errors import NotFoundError, BadRequestError
 from app.core.responses import SuccessResponse, ErrorResponse
 from app.db.session import get_db
@@ -11,7 +11,6 @@ from app.schemas.menu_items import MenuItemCreate, MenuItemUpdate, MenuItemListR
 router = APIRouter(prefix="/menu_items", tags=["menu_items"])
 menu_item_repo = MenuItemRepository()
 restaurant_repo = RestaurantRepository()
-menu_item_options_repo = MenuItemOptionsRepository()
 menu_item_addons_repo = MenuItemAddonsRepository()
 
 @router.get("/", response_model=MenuItemListResponse)
@@ -21,9 +20,6 @@ def get_menu_items(filters: GetMenuItemFilters = Depends(), db: Session = Depend
         raise NotFoundError("No menu items found")
     
     for menu_item in menu_items:
-        options_filters = GetMenuItemOptionsFilters(menu_item_id=menu_item.id)
-        menu_item.options = menu_item_options_repo.get(db, filters=options_filters)
-        
         addons_filters = GetMenuItemAddonsFilters(menu_item_id=menu_item.id)
         menu_item.addons = menu_item_addons_repo.get(db, filters=addons_filters)
     

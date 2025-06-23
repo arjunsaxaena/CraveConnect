@@ -3,13 +3,11 @@ from uuid import UUID
 from PIL import Image
 from app.repositories.repository import (
     MenuItemRepository,
-    MenuItemOptionsRepository,
     AddonsRepository,
     MenuItemAddonsRepository,
     RestaurantRepository,
 )
-from app.schemas.menu_items import MenuItemCreate
-from app.schemas.menu_item_options import MenuItemOptionCreate
+from app.schemas.menu_items import MenuItemCreate, MenuItemOption
 from app.schemas.addons import AddonsCreate
 from app.schemas.menu_item_addons import MenuItemAddonsCreate
 from app.core.errors import NotFoundError, BadRequestError
@@ -118,7 +116,6 @@ def extract_menu_data_from_image(file_path: str) -> dict:
 
 def process_menu_image(db: Session, file_path: str, restaurant_id: UUID):
     menu_item_repo = MenuItemRepository()
-    menu_item_option_repo = MenuItemOptionsRepository()
     addon_repo = AddonsRepository()
     menu_item_addon_repo = MenuItemAddonsRepository()
     restaurant_repo = RestaurantRepository()
@@ -131,27 +128,28 @@ def process_menu_image(db: Session, file_path: str, restaurant_id: UUID):
         menu_data = extract_menu_data_from_image(file_path)
 
         for item_data in menu_data.get("menu_items", []):
+            # Convert options data to MenuItemOption objects
+            options_data = item_data.get("options", [])
+            if not options_data and "price" in item_data:
+                options_data = [{"name": "Regular", "price": item_data["price"]}]
+            
+            options = [
+                MenuItemOption(
+                    name=option["name"],
+                    description=option.get("description"),
+                    price=option["price"]
+                ) for option in options_data
+            ]
+
             menu_item_create = MenuItemCreate(
                 restaurant_id=restaurant_id,
                 name=item_data["name"],
                 description=item_data.get("description", None),
+                options=options,
                 tags=item_data.get("tags", []),
                 allergens=item_data.get("allergens", [])
             )
             menu_item = menu_item_repo.create(db, obj_in=menu_item_create)
-
-            options_data = item_data.get("options", [])
-            if not options_data and "price" in item_data:
-                options_data = [{"name": "Regular", "price": item_data["price"]}]
-
-            for option_data in options_data:
-                option_create = MenuItemOptionCreate(
-                    menu_item_id=menu_item.id,
-                    name=option_data["name"],
-                    description=option_data.get("description"),
-                    price=option_data["price"]
-                )
-                menu_item_option_repo.create(db, obj_in=option_create)
 
         for addon_data in menu_data.get("global_addons", []):
             addon_create = AddonsCreate(

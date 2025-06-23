@@ -41,19 +41,9 @@ create table menu_items (
   restaurant_id uuid references restaurants (id),
   name text not null,
   description text,
+  options jsonb,
   tags text[],
   allergens text[],
-  created_at timestamptz default now(),
-  updated_at timestamptz default now(),
-  meta jsonb default '{}'
-);
-
-create table menu_item_options (
-  id uuid primary key default gen_random_uuid(),
-  menu_item_id uuid references menu_items (id),
-  name text not null,         -- e.g., 'Small', 'Medium', 'Large', or 'Regular' for single-size items
-  description text,
-  price numeric(10,2) not null,
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
   meta jsonb default '{}'

@@ -1,13 +1,18 @@
 from pydantic import BaseModel
 from typing import Optional, List
 from uuid import UUID
-from .menu_item_options import MenuItemOptionOut
 from .menu_item_addons import MenuItemAddonsOut
+
+class MenuItemOption(BaseModel):
+    name: str
+    description: Optional[str] = None
+    price: float
 
 class MenuItemCreate(BaseModel):
     restaurant_id: UUID
     name: str
     description: Optional[str] = None
+    options: Optional[List[MenuItemOption]] = None
     tags: Optional[List[str]] = None
     allergens: Optional[List[str]] = None
     meta: Optional[dict] = None
@@ -15,6 +20,7 @@ class MenuItemCreate(BaseModel):
 class MenuItemUpdate(BaseModel):
     name: Optional[str] = None
     description: Optional[str] = None
+    options: Optional[List[MenuItemOption]] = None
     tags: Optional[List[str]] = None
     allergens: Optional[List[str]] = None
     meta: Optional[dict] = None
@@ -24,10 +30,10 @@ class MenuItemOut(BaseModel):
     restaurant_id: UUID
     name: str
     description: Optional[str] = None
+    options: Optional[List[MenuItemOption]] = None
     tags: Optional[List[str]] = None
     allergens: Optional[List[str]] = None
     meta: Optional[dict] = None
-    options: List[MenuItemOptionOut] = []
     addons: List[MenuItemAddonsOut] = []
 
     model_config = {
