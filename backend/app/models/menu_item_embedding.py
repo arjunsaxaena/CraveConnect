@@ -10,7 +10,7 @@ class MenuItemEmbedding(Base):
     __tablename__ = Tables.MENU_ITEM_EMBEDDINGS
 
     menu_item_id = Column(UUID(as_uuid=True), ForeignKey('menu_items.id'), primary_key=True, nullable=False)
-    embedding = Column(Vector(768), nullable=False)
+    embedding = Column(Vector(384), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     meta = Column(JSON, nullable=True, default={})

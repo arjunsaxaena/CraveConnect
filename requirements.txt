@@ -1,6 +1,7 @@
 fastapi
 uvicorn
 python-multipart
+numpy
 pillow
 pytesseract
 requests
@@ -11,3 +12,9 @@ pydantic
 pgvector 
 python-dotenv
 google-generativeai
+pydantic-settings
+psycopg2
+cohere>=5.0.0
+backoff>=2.2.1
+
+

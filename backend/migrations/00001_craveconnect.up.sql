@@ -168,7 +168,7 @@ create table recommendations (
 
 create table menu_item_embeddings (
   menu_item_id uuid references menu_items (id) primary key,
-  embedding vector(768),
+  embedding vector(384),
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
   meta jsonb default '{}'

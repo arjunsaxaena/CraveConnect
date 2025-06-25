@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, BackgroundTasks
 from sqlalchemy.orm import Session
+import logging
 from app.repositories.repository import MenuItemRepository, RestaurantRepository, MenuItemAddonsRepository
 from app.models.menu_items import MenuItem, validate_menu_item
 from app.models.filters import GetMenuItemFilters, GetMenuItemAddonsFilters
@@ -7,8 +8,12 @@ from app.core.errors import NotFoundError, BadRequestError
 from app.core.responses import SuccessResponse, ErrorResponse
 from app.db.session import get_db
 from app.schemas.menu_items import MenuItemCreate, MenuItemUpdate, MenuItemListResponse, MenuItemSingleResponse
+from app.utils.embeddings import process_embedding_async
 
-router = APIRouter(prefix="/menu_items", tags=["menu_items"])
+logger = logging.getLogger(__name__)
+
+router = APIRouter(prefix="/menu_items", tags=["menu_items"])   
+
 menu_item_repo = MenuItemRepository()
 restaurant_repo = RestaurantRepository()
 menu_item_addons_repo = MenuItemAddonsRepository()
@@ -26,7 +31,11 @@ def get_menu_items(filters: GetMenuItemFilters = Depends(), db: Session = Depend
     return MenuItemListResponse(data=menu_items)
 
 @router.post("/", response_model=MenuItemSingleResponse, status_code=status.HTTP_201_CREATED)
-def create_menu_item(menu_item: MenuItemCreate, db: Session = Depends(get_db)):
+def create_menu_item(
+    menu_item: MenuItemCreate, 
+    background_tasks: BackgroundTasks,
+    db: Session = Depends(get_db)
+):
     try:
         menu_item_obj = MenuItem(**menu_item.dict())
         validate_menu_item(menu_item_obj)
@@ -35,7 +44,15 @@ def create_menu_item(menu_item: MenuItemCreate, db: Session = Depends(get_db)):
         if not restaurant:
             raise NotFoundError(f"Restaurant {menu_item.restaurant_id} not found")
 
+        # Create the menu item first
         created = menu_item_repo.create(db, obj_in=menu_item)
+        
+        # Schedule embedding generation as a background 
+        #TODO:In production, replace this with a proper task queue like Celery.
+
+        background_tasks.add_task(process_embedding_async, created.id)
+        logger.info(f"Scheduled embedding generation for menu item {created.id}")
+        
         return MenuItemSingleResponse(data=created, message="Menu item created successfully")
     except HTTPException as e:
         raise e
@@ -43,12 +60,22 @@ def create_menu_item(menu_item: MenuItemCreate, db: Session = Depends(get_db)):
         raise BadRequestError(str(e))
 
 @router.patch("/", response_model=MenuItemSingleResponse, responses={404: {"model": ErrorResponse}, 400: {"model": ErrorResponse}})
-def update_menu_item(menu_item_data: MenuItemUpdate, menu_item_id: str = Query(...), db: Session = Depends(get_db)):
+def update_menu_item(
+    menu_item_data: MenuItemUpdate, 
+    background_tasks: BackgroundTasks,
+    menu_item_id: str = Query(...), 
+    db: Session = Depends(get_db)
+):
     menu_item = menu_item_repo.get(db, id=menu_item_id)
     if not menu_item:
         raise NotFoundError(f"Menu item {menu_item_id} not found")
     try:
         updated = menu_item_repo.update(db, db_obj=menu_item, obj_in=menu_item_data)
+        
+        # Schedule embedding update in background
+        background_tasks.add_task(process_embedding_async, updated.id)
+        logger.info(f"Scheduled embedding update for menu item {updated.id}")
+        
         return MenuItemSingleResponse(data=updated, message="Menu item updated successfully")
     except HTTPException as e:
         raise e
