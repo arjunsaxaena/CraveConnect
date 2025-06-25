@@ -21,7 +21,6 @@ from app.db.session import SessionLocal
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize Cohere client
 try:
     co = cohere.Client(settings.COHERE_API_KEY)
     logger.info("Cohere API client initialized successfully")
@@ -60,17 +59,13 @@ def generate_embedding(text: str) -> List[float]:
         raise BadRequestError("Cohere API client is not available")
     
     try:
-        # Use Cohere's embed endpoint
         response = co.embed(
             texts=[text],
             model='embed-english-light-v3.0',
             input_type='search_query'
         )
-        
-        # Get the embedding vector
         embedding = response.embeddings[0]
         
-        # Normalize the embedding vector
         embedding_array = np.array(embedding)
         normalized_embedding = embedding_array / np.linalg.norm(embedding_array)
         
@@ -94,17 +89,14 @@ def create_menu_item_embedding(db: Session, menu_item_id: UUID) -> Dict[str, Any
     text_for_embedding = create_text_for_embedding(menu_item)
     embedding_vector = generate_embedding(text_for_embedding)
     
-    # Check if embedding already exists by querying with menu_item_id as a filter
     existing_embeddings = embedding_repo.get(db, filters={"menu_item_id": menu_item_id})
     existing_embedding = existing_embeddings[0] if existing_embeddings else None
     
     if existing_embedding:
-        # Use the schema for update
         embedding_update = MenuItemEmbeddingUpdate(embedding=embedding_vector)
         updated = embedding_repo.update(db, db_obj=existing_embedding, obj_in=embedding_update)
         return {"message": "Embedding updated successfully", "menu_item_id": str(menu_item_id)}
     else:
-        # Use the schema for create
         embedding_create = MenuItemEmbeddingCreate(
             menu_item_id=menu_item_id,
             embedding=embedding_vector
@@ -239,46 +231,60 @@ def batch_create_embeddings(db: Session, menu_item_ids: Optional[List[UUID]] = N
 
 
 def find_similar_menu_items(db: Session, query_text: str, limit: int = 10) -> List[Dict[str, Any]]:
-    """
-    Finds menu items similar to the query text using vector similarity search
-    """
     if not co:
         raise BadRequestError("Cohere API client is not available")
-    
     try:
-        # Generate embedding for the query text
         query_embedding = generate_embedding(query_text)
-        
-        # For demonstration purposes, this is a simple approach that fetches all
-        # embeddings and does similarity comparison in memory.
-        #TODO For production, consider using a vector database or extension like pgvector
-        
-        embedding_repo = MenuItemEmbeddingRepository()
         menu_item_repo = MenuItemRepository()
         
-        all_embeddings = embedding_repo.get(db)
+        from sqlalchemy import text
+        from app.models.menu_item_embedding import MenuItemEmbedding
+        from app.models.menu_items import MenuItem
+    
+        vector_str = f"'[{','.join(map(str, query_embedding))}]'"
+
+        query = text(f"""
+            SELECT 
+                mi.id, 
+                mi.name, 
+                mi.description,
+                mi.price,
+                mi.tags,
+                mi.allergens,
+                mi.image_url,
+                mi.restaurant_id,
+                1 - (embedding <-> {vector_str}::vector) as similarity
+            FROM 
+                menu_item_embeddings mie
+            JOIN 
+                menu_items mi ON mie.menu_item_id = mi.id
+            ORDER BY 
+                embedding <-> {vector_str}::vector
+            LIMIT {limit}
+        """)
         
-        # Calculate similarity scores
-        results = []
-        query_array = np.array(query_embedding)
+        result = db.execute(query)
         
-        for emb in all_embeddings:
-            emb_array = np.array(emb.embedding)
-            # Cosine similarity
-            similarity = np.dot(query_array, emb_array) / (np.linalg.norm(query_array) * np.linalg.norm(emb_array))
-            
-            menu_item = menu_item_repo.get(db, id=emb.menu_item_id)
-            if menu_item:
-                results.append({
-                    "menu_item_id": str(emb.menu_item_id),
-                    "name": menu_item.name,
-                    "similarity": float(similarity),
-                    "menu_item": menu_item
-                })
+        similar_items = []
+        for row in result:
+            menu_item_dict = {
+                "menu_item_id": str(row.id),
+                "name": row.name,
+                "similarity": float(row.similarity),
+                "menu_item": {
+                    "id": str(row.id),
+                    "name": row.name,
+                    "description": row.description,
+                    "price": row.price,
+                    "tags": row.tags,
+                    "allergens": row.allergens,
+                    "image_url": row.image_url,
+                    "restaurant_id": str(row.restaurant_id)
+                }
+            }
+            similar_items.append(menu_item_dict)
         
-        # Sort by similarity (highest first) and limit results
-        results = sorted(results, key=lambda x: x["similarity"], reverse=True)[:limit]
-        return results
+        return similar_items
         
     except Exception as e:
         logger.error(f"Error finding similar menu items: {e}")
