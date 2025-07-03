@@ -1,7 +1,5 @@
-import json
-from typing import List, Tuple
 from sqlalchemy.orm import Session
-from app.repositories.repository import MenuItemEmbeddingRepository, MenuItemRepository
+from app.repositories.repository import MenuItemEmbeddingRepository
 import google.generativeai as genai
 from app.core.config import settings
 
@@ -20,6 +18,8 @@ def resolve_query_gemini(db: Session, query_text: str, k: int = 5):
     query_embedding = response['embedding']
 
     embedding_repo = MenuItemEmbeddingRepository()
-    top_k_menu_item_ids = embedding_repo.get_top_k_similar(db, query_embedding, k=k)
+    top_k = embedding_repo.get_top_k_similar(db, query_embedding, k=k)
+    menu_item_ids = [str(mid) for mid, _ in top_k]
+    confidences = {str(mid): float(conf) for mid, conf in top_k}
 
-    return [str(mid) for mid in top_k_menu_item_ids], {"confidence": 1.0, "method": "embedding_similarity"} 
+    return menu_item_ids, {"confidences": confidences, "method": "embedding_similarity"} 

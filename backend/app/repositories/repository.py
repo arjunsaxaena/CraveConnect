@@ -60,11 +60,11 @@ class MenuItemEmbeddingRepository(BaseRepository):
 
     def get_top_k_similar(self, db: Session, query_embedding: list, k: int = 5):
         sql = text(
-            "SELECT menu_item_id FROM menu_item_embeddings "
-            "ORDER BY embedding <-> (:embedding)::vector LIMIT :k"
+            "SELECT menu_item_id, (embedding <-> (:embedding)::vector) as distance FROM menu_item_embeddings "
+            "ORDER BY distance ASC LIMIT :k"
         )
         result = db.execute(sql, {"embedding": query_embedding, "k": k})
-        return [row[0] for row in result.fetchall()]
+        return [(row[0], 1.0 / (1.0 + row[1])) for row in result.fetchall()]
 
 class NotificationRepository(BaseRepository):
     def __init__(self):

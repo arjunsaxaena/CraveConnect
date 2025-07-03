@@ -34,7 +34,7 @@ def resolve_query(query: QueryCreate, db: Session = Depends(get_db)):
             recommendation = RecommendationCreate(
                 query_id=query_obj.id,
                 menu_item_id=mid,
-                confidence_score=context.get("confidence", 1.0),
+                confidence_score=context['confidences'].get(mid, 1.0),
                 meta={}
             )
             recommendation_repo.create(db, obj_in=recommendation)
