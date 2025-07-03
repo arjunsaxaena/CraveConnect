@@ -16,6 +16,7 @@ from app.core.config import settings
 import google.generativeai as genai
 import json
 from app.models.filters import GetMenuItemFilters
+from app.utils.embedding import create_menu_item_embedding
 
 genai.configure(api_key=settings.GEMINI_API_KEY)
 
@@ -128,7 +129,6 @@ def process_menu_image(db: Session, file_path: str, restaurant_id: UUID):
         menu_data = extract_menu_data_from_image(file_path)
 
         for item_data in menu_data.get("menu_items", []):
-            # Convert options data to MenuItemOption objects
             options_data = item_data.get("options", [])
             if not options_data and "price" in item_data:
                 options_data = [{"name": "Regular", "price": item_data["price"]}]
@@ -150,6 +150,7 @@ def process_menu_image(db: Session, file_path: str, restaurant_id: UUID):
                 allergens=item_data.get("allergens", [])
             )
             menu_item = menu_item_repo.create(db, obj_in=menu_item_create)
+            create_menu_item_embedding(db, menu_item.id, menu_item)
 
         for addon_data in menu_data.get("global_addons", []):
             addon_create = AddonsCreate(

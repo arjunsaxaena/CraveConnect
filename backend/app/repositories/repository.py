@@ -17,6 +17,8 @@ from app.models.file import File
 from app.models.addons import Addons
 from app.models.delivery_persons import DeliveryPerson
 from app.models.user_preferences import UserPreferences
+from sqlalchemy import text
+from sqlalchemy.orm import Session
 
 
 
@@ -55,6 +57,14 @@ class MenuItemAddonsRepository(BaseRepository):
 class MenuItemEmbeddingRepository(BaseRepository):
     def __init__(self):
         super().__init__(MenuItemEmbedding)
+
+    def get_top_k_similar(self, db: Session, query_embedding: list, k: int = 5):
+        sql = text(
+            "SELECT menu_item_id FROM menu_item_embeddings "
+            "ORDER BY embedding <-> (:embedding)::vector LIMIT :k"
+        )
+        result = db.execute(sql, {"embedding": query_embedding, "k": k})
+        return [row[0] for row in result.fetchall()]
 
 class NotificationRepository(BaseRepository):
     def __init__(self):
