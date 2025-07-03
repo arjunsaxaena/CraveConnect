@@ -21,7 +21,11 @@ class BaseRepository(Generic[T]):
                 items = filters.items()
             for field, value in items:
                 if value is not None:
-                    query = query.filter(getattr(self.model, field) == value)
+                    column = getattr(self.model, field)
+                    if isinstance(value, (list, tuple)):
+                        query = query.filter(column.in_(value))
+                    else:
+                        query = query.filter(column == value)
             return query.all()
         return query.all()
 

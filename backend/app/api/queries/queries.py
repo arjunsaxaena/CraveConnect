@@ -4,7 +4,7 @@ from app.db.session import get_db
 from app.schemas.menu_items import MenuItemListResponse
 from app.schemas.queries import QueryCreate
 from app.repositories.repository import QueriesRepository, RecommendationRepository, MenuItemRepository, MenuItemAddonsRepository
-from app.utils.recommend import resolve_query_gemini
+from app.utils.recommend import resolve_query_gemini_top_k, resolve_query_gemini_threshold
 from app.models.filters import GetMenuItemAddonsFilters
 from app.schemas.recommendation import RecommendationCreate
 
@@ -20,7 +20,8 @@ def resolve_query(query: QueryCreate, db: Session = Depends(get_db)):
 
         query_obj = queries_repo.create(db, obj_in=query)
 
-        menu_item_ids, context = resolve_query_gemini(db, query_text=query.query_text)
+        menu_item_ids, context = resolve_query_gemini_top_k(db, user_id=query.user_id, query_text=query.query_text)
+        # menu_item_ids, context = resolve_query_gemini_threshold(db, user_id=query.user_id, query_text=query.query_text)
         menu_items = []
         for mid in menu_item_ids:
             menu_item = menu_item_repo.get(db, id=mid)
