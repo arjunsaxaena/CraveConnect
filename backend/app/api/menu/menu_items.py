@@ -7,6 +7,7 @@ from app.core.errors import NotFoundError, BadRequestError
 from app.core.responses import SuccessResponse, ErrorResponse
 from app.db.session import get_db
 from app.schemas.menu_items import MenuItemCreate, MenuItemUpdate, MenuItemListResponse, MenuItemSingleResponse
+from app.utils.embedding import create_menu_item_embedding
 
 router = APIRouter(prefix="/menu_items", tags=["menu_items"])
 menu_item_repo = MenuItemRepository()
@@ -36,6 +37,8 @@ def create_menu_item(menu_item: MenuItemCreate, db: Session = Depends(get_db)):
             raise NotFoundError(f"Restaurant {menu_item.restaurant_id} not found")
 
         created = menu_item_repo.create(db, obj_in=menu_item)
+        create_menu_item_embedding(db, created.id, created) # Create embedding for the new menu item
+
         return MenuItemSingleResponse(data=created, message="Menu item created successfully")
     except HTTPException as e:
         raise e
