@@ -20,7 +20,6 @@ create table users (
   name text not null,
   email text unique not null,
   provider auth_provider not null,
-  address jsonb,
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
   meta jsonb
@@ -29,7 +28,6 @@ create table users (
 create table restaurants (
   id uuid primary key default gen_random_uuid(),
   name text not null,
-  address jsonb,
   owner_id uuid references users (id),
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
@@ -207,4 +205,28 @@ create table notifications (
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
   meta jsonb default '{}'
+);
+
+create table addresses (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references users (id),
+  restaurant_id uuid references restaurants (id),
+  alias text,
+  street text,
+  locality text,
+  city text,
+  state text,
+  pincode int,
+  landmark text,
+  is_primary boolean default false,
+  latitude double precision,
+  longitude double precision,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  meta jsonb default '{}',
+
+  constraint one_owner CHECK (
+    (user_id is not null and restaurant_id is null)
+    or (user_id is null and restaurant_id is not null)
+  )
 );

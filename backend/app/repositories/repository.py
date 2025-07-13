@@ -17,6 +17,7 @@ from app.models.file import File
 from app.models.addons import Addons
 from app.models.delivery_persons import DeliveryPerson
 from app.models.user_preferences import UserPreferences
+from app.models.address import Address
 from sqlalchemy import text
 from sqlalchemy.orm import Session
 
@@ -101,3 +102,7 @@ class DeliveryPersonRepository(BaseRepository):
 class UserPreferencesRepository(BaseRepository):
     def __init__(self):
         super().__init__(UserPreferences)
+
+class AddressRepository(BaseRepository):
+    def __init__(self):
+        super().__init__(Address)

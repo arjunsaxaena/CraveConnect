@@ -1,3 +1,4 @@
+drop table if exists addresses;
 drop table if exists notifications;
 drop table if exists payments;
 drop table if exists user_preferences;

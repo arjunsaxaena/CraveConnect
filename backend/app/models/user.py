@@ -5,7 +5,7 @@ from .enums import AuthProvider
 import uuid
 from app.db.tables import Tables
 from app.core.errors import errors
-
+from sqlalchemy.orm import relationship
 
 class User(Base):
     __tablename__ = Tables.USERS
@@ -15,11 +15,11 @@ class User(Base):
     name = Column(String, nullable=False)
     email = Column(String, nullable=False, unique=True)
     provider = Column(Enum(AuthProvider, name='auth_provider'), nullable=False)
-    address = Column(JSON, nullable=True, default=list)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
     meta = Column(JSON, nullable=True, default={})
 
+    addresses = relationship('Address', back_populates='user', cascade='all, delete-orphan')
 
 def validate_user(user: User):
     if user.name is None or user.name == "":
