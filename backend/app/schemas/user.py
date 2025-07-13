@@ -4,11 +4,11 @@ from uuid import UUID
 
 class Address(BaseModel):
     alias: Optional[str] = None
-    street: str
+    street: Optional[str] = None
     locality: Optional[str] = None
-    city: str
-    state: str
-    pincode: int
+    city: Optional[str] = None
+    state: Optional[str] = None
+    pincode: Optional[int] = None
     landmark: Optional[str] = None
     latitude: float
     longitude: float
