@@ -2,16 +2,22 @@ from pydantic import BaseModel
 from typing import Optional
 from uuid import UUID
 
+class SessionLocation(BaseModel):
+    latitude: float
+    longitude: float
+
 class UserCreate(BaseModel):
     name: str
     email: str
     provider: str
+    session_location: Optional[SessionLocation] = None
     meta: Optional[dict] = None
 
 class UserUpdate(BaseModel):
     name: Optional[str] = None
     email: Optional[str] = None
     provider: Optional[str] = None
+    session_location: Optional[SessionLocation] = None
     meta: Optional[dict] = None
 
 class UserOut(BaseModel):
@@ -19,6 +25,7 @@ class UserOut(BaseModel):
     name: str
     email: str
     provider: str
+    session_location: Optional[SessionLocation] = None
     meta: Optional[dict]
 
     model_config = {

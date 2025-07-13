@@ -20,6 +20,7 @@ create table users (
   name text not null,
   email text unique not null,
   provider auth_provider not null,
+  session_location jsonb,
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
   meta jsonb
