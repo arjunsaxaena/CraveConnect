@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class FileTypes(str, Enum):
     MENU = "menu"
     PROFILE_IMAGE = "profile_image"
@@ -7,10 +8,12 @@ class FileTypes(str, Enum):
     RESTAURANT_LOGO = "restaurant_logo"
     OTHER = "other"
 
+
 class AuthProvider(str, Enum):
     GOOGLE = "google.com"
     APPLE = "apple"
     PHONE = "phone"
+
 
 class VehicleType(str, Enum):
     BIKE = "bike"
@@ -18,11 +21,6 @@ class VehicleType(str, Enum):
     SCOOTER = "scooter"
     BICYCLE = "bicycle"
 
-class PaymentStatus(str, Enum):
-    INITIATED = "initiated"
-    SUCCESS = "success"
-    FAILED = "failed"
-    REFUNDED = "refunded"
 
 class SpiceTolerance(str, Enum):
     LOW = "low"

@@ -8,6 +8,8 @@ langchain
 langchain-google-genai
 google-generativeai
 pydantic
-pgvector 
+pgvector
 python-dotenv
 google-generativeai
+razorpay
+cryptography

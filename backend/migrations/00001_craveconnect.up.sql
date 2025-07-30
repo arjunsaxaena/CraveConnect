@@ -1,19 +1,10 @@
 create extension if not exists vector;
 create extension if not exists pgcrypto;
 
-
-
 create type auth_provider as enum ('GOOGLE', 'APPLE', 'PHONE');
-
 create type vehicle_type as enum ('BIKE', 'CAR', 'SCOOTER', 'BICYCLE');
-
 create type file_type as enum ('MENU', 'PROFILE_IMAGE', 'VEHICLE_IMAGE', 'RESTAURANT_LOGO', 'OTHER');
-
-create type payment_status as enum ('INITIATED', 'SUCCESS', 'FAILED', 'REFUNDED');
-
 create type spice_tolerance as enum ('LOW', 'MEDIUM', 'HIGH');
-
-
 
 create table users (
   id uuid primary key default gen_random_uuid(),
@@ -50,7 +41,7 @@ create table menu_items (
 
 create table addons (
   id uuid primary key default gen_random_uuid(),
-  name text not null,         -- e.g., 'Extra Cheese'
+  name text not null,
   options jsonb,
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
@@ -61,6 +52,40 @@ create table menu_item_addons (
   id uuid primary key default gen_random_uuid(),
   menu_item_id uuid references menu_items (id),
   addon_id uuid references addons (id),
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  meta jsonb default '{}'
+);
+
+create table carts (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid references users (id) on delete cascade,
+  restaurant_id uuid references restaurants (id),
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  meta jsonb default '{}',
+
+  unique(user_id, restaurant_id)
+);
+
+create table cart_items (
+  id uuid primary key default gen_random_uuid(),
+  cart_id uuid references carts (id) on delete cascade,
+  menu_item_id uuid references menu_items (id),
+  quantity int not null default 1 check (quantity > 0),
+  base_price numeric(10, 2) not null,
+  special_instructions text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  meta jsonb default '{}'
+);
+
+create table cart_item_addons (
+  id uuid primary key default gen_random_uuid(),
+  cart_item_id uuid references cart_items (id) on delete cascade,
+  addon_id uuid references addons (id),
+  quantity int not null default 1 check (quantity > 0),
+  addon_price numeric(10, 2) not null,
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
   meta jsonb default '{}'
@@ -141,8 +166,6 @@ create table reviews (
   meta jsonb default '{}'
 );
 
-
-
 create table files (
   id uuid primary key default gen_random_uuid(),
   file_url text not null,
@@ -152,8 +175,6 @@ create table files (
   updated_at timestamptz default now(),
   meta jsonb default '{}'
 );
-
-
 
 create table recommendations (
   id uuid primary key default gen_random_uuid(),
@@ -184,17 +205,23 @@ create table user_preferences (
   meta jsonb default '{}'
 );
 
-
-
-create table payments (
-  id uuid primary key default gen_random_uuid(),
-  order_id uuid references orders (id),
-  amount numeric(10,2) not null,
-  status payment_status not null,
-  provider text,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now(),
-  meta jsonb default '{}'
+create table payment_history (
+    id uuid primary key default gen_random_uuid(),
+    user_id uuid not null references users(id) on delete cascade,
+    items text[] not null,
+    prices numeric(10, 2)[] not null,
+    razorpay_payment_id text,
+    razorpay_order_id text,
+    razorpay_signature text,
+    purchased_at timestamptz default now(),
+    purchase_status text default 'COMPLETED',
+    payment_method text,
+    totalAmount numeric(10, 2) not null,
+    payment_status text default 'SUCCESSFUL',
+    notes jsonb,
+    raw_payload jsonb,
+    created_at timestamptz default now(),
+    payment_timestamp timestamptz
 );
 
 create table notifications (
@@ -226,7 +253,7 @@ create table addresses (
   updated_at timestamptz default now(),
   meta jsonb default '{}',
 
-  constraint one_owner CHECK (
+  constraint one_owner check (
     (user_id is not null and restaurant_id is null)
     or (user_id is null and restaurant_id is not null)
   )
