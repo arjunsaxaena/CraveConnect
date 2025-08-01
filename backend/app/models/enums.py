@@ -26,3 +26,8 @@ class SpiceTolerance(str, Enum):
     LOW = "low"
     MEDIUM = "medium"
     HIGH = "high"
+
+class PaymentStatus(str, Enum):
+    PENDING = "pending"
+    COMPLETED = "completed"
+    FAILED = "failed"
