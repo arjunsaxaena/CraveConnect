@@ -39,21 +39,20 @@ push:
 deploy-vm:
 	@echo "$(YELLOW)Deploying to VM ($(VM_IP))...$(NC)"
 	@ssh -i $(SSH_KEY) $(VM_USER)@$(VM_IP) 'mkdir -p ~/craveconnect'
-	@scp -i $(SSH_KEY) docker-compose.yml $(VM_USER)@$(VM_IP):~/craveconnect/
-	@scp -i $(SSH_KEY) .env $(VM_USER)@$(VM_IP):~/craveconnect/ 2>/dev/null || echo "$(YELLOW)No .env file found, using VM's existing .env$(NC)"
-	@ssh -i $(SSH_KEY) $(VM_USER)@$(VM_IP) 'cd ~/craveconnect && docker compose pull craveconnect-backend'
-	@echo "$(GREEN)Deployment files copied to VM and image pulled$(NC)"
+	@ssh -i $(SSH_KEY) $(VM_USER)@$(VM_IP) 'cd ~/craveconnect && docker pull $(FULL_IMAGE_NAME)'
+	@echo "$(GREEN)Image pulled successfully on VM$(NC)"
 
 restart:
 	@echo "$(YELLOW)Restarting application on VM...$(NC)"
-	@ssh -i $(SSH_KEY) $(VM_USER)@$(VM_IP) 'cd ~/craveconnect && docker compose down'
-	@ssh -i $(SSH_KEY) $(VM_USER)@$(VM_IP) 'cd ~/craveconnect && docker compose up -d'
+	@ssh -i $(SSH_KEY) $(VM_USER)@$(VM_IP) 'cd ~/craveconnect && docker stop craveconnect-backend 2>/dev/null || true'
+	@ssh -i $(SSH_KEY) $(VM_USER)@$(VM_IP) 'cd ~/craveconnect && docker rm craveconnect-backend 2>/dev/null || true'
+	@ssh -i $(SSH_KEY) $(VM_USER)@$(VM_IP) 'cd ~/craveconnect && docker run -d --name craveconnect-backend -p 4001:4001 -v ~/craveconnect/uploads:/app/backend/uploads -e PYTHONPATH=/app --restart unless-stopped $(FULL_IMAGE_NAME)'
 	@echo "$(GREEN)Application restarted on VM$(NC)"
 	@echo "$(BLUE)Application URL: http://$(VM_IP):4001$(NC)"
 
 logs:
 	@echo "$(YELLOW)Fetching logs from VM...$(NC)"
-	@ssh -i $(SSH_KEY) $(VM_USER)@$(VM_IP) 'cd ~/craveconnect && docker compose logs -f craveconnect-backend'
+	@ssh -i $(SSH_KEY) $(VM_USER)@$(VM_IP) 'cd ~/craveconnect && docker logs -f craveconnect-backend'
 
 ssh:
 	@echo "$(YELLOW)Connecting to VM...$(NC)"
@@ -62,7 +61,6 @@ ssh:
 deploy: build push deploy-vm restart
 	@echo "$(GREEN)Full deployment completed successfully!$(NC)"
 	@echo "$(BLUE)Your application is now live at: http://$(VM_IP):4001$(NC)"
-	@echo "$(BLUE)API docs at: http://$(VM_IP):4001/docs$(NC)"
 
 clean:
 	@echo "$(YELLOW)Cleaning up local Docker images...$(NC)"
@@ -72,12 +70,14 @@ clean:
 
 status:
 	@echo "$(YELLOW)Checking VM status...$(NC)"
-	@ssh -i $(SSH_KEY) $(VM_USER)@$(VM_IP) 'cd ~/craveconnect && docker compose ps'
+	@ssh -i $(SSH_KEY) $(VM_USER)@$(VM_IP) 'cd ~/craveconnect && docker ps -a | grep craveconnect-backend'
 	@echo "$(GREEN)Status check completed$(NC)"
 
 quick-deploy:
 	@echo "$(YELLOW)Quick deployment (pull latest and restart)...$(NC)"
-	@ssh -i $(SSH_KEY) $(VM_USER)@$(VM_IP) 'cd ~/craveconnect && docker compose pull craveconnect-backend'
-	@ssh -i $(SSH_KEY) $(VM_USER)@$(VM_IP) 'cd ~/craveconnect && docker compose down && docker compose up -d'
+	@ssh -i $(SSH_KEY) $(VM_USER)@$(VM_IP) 'cd ~/craveconnect && docker pull $(FULL_IMAGE_NAME)'
+	@ssh -i $(SSH_KEY) $(VM_USER)@$(VM_IP) 'cd ~/craveconnect && docker stop craveconnect-backend 2>/dev/null || true'
+	@ssh -i $(SSH_KEY) $(VM_USER)@$(VM_IP) 'cd ~/craveconnect && docker rm craveconnect-backend 2>/dev/null || true'
+	@ssh -i $(SSH_KEY) $(VM_USER)@$(VM_IP) 'cd ~/craveconnect && docker run -d --name craveconnect-backend -p 4001:4001 -v ~/craveconnect/uploads:/app/backend/uploads -e PYTHONPATH=/app --restart unless-stopped $(FULL_IMAGE_NAME)'
 	@echo "$(GREEN)Quick deployment completed$(NC)"
 	@echo "$(BLUE)Application URL: http://$(VM_IP):4001$(NC)" 
