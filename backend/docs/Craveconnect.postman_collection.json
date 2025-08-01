@@ -160,7 +160,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"name\": \"Arjun Saxena\",\n  \"email\": \"arjunsaxena04@gmail.com\",\n  \"provider\": \"google.com\",\n  \"address\": {\n    \"street\": \"1114, sector 46-B\",\n    \"city\": \"Chandigarh\",\n    \"state\": \"Chandigarh\",\n    \"pincode\": 160047,\n    \"latitude\": 30.7333,\n    \"longitude\": 76.7794\n  }\n}",
+									"raw": "{\n  \"name\": \"Arjun Saxena\",\n  \"email\": \"arjunsaxena04@gmail.com\",\n  \"provider\": \"google.com\"\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -345,6 +345,132 @@
 										"api",
 										"reviews",
 										"79fedab5-bb1d-42a0-9a2b-14ab902dad6d"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "addresses",
+					"item": [
+						{
+							"name": "get-addresses",
+							"request": {
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{domain}}/v1/api/addresses/",
+									"host": [
+										"{{domain}}"
+									],
+									"path": [
+										"v1",
+										"api",
+										"addresses",
+										""
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "create-address",
+							"request": {
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"alias\": \"Home\",\n  \"street\": \"123 Main St\",\n  \"locality\": \"Downtown\",\n  \"city\": \"Metropolis\",\n  \"state\": \"NY\",\n  \"pincode\": 12345,\n  \"landmark\": \"Near Central Park\",\n  \"is_primary\": true,\n  \"latitude\": 40.7128,\n  \"longitude\": -74.0060\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{domain}}/v1/api/addresses/?user_id=a1f62d75-a54c-430e-8ff0-9099a5558708",
+									"host": [
+										"{{domain}}"
+									],
+									"path": [
+										"v1",
+										"api",
+										"addresses",
+										""
+									],
+									"query": [
+										{
+											"key": "user_id",
+											"value": "a1f62d75-a54c-430e-8ff0-9099a5558708"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "update-address",
+							"request": {
+								"method": "PATCH",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\n  \"alias\": \"Work\",\n  \"street\": \"456 Market St\",\n  \"city\": \"Metropolis\",\n  \"is_primary\": false\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{domain}}/v1/api/addresses/?address_id=0a8b3a57-b56b-4032-847e-6fe30e3b83f4&user_id=a1f62d75-a54c-430e-8ff0-9099a5558708",
+									"host": [
+										"{{domain}}"
+									],
+									"path": [
+										"v1",
+										"api",
+										"addresses",
+										""
+									],
+									"query": [
+										{
+											"key": "address_id",
+											"value": "0a8b3a57-b56b-4032-847e-6fe30e3b83f4"
+										},
+										{
+											"key": "user_id",
+											"value": "a1f62d75-a54c-430e-8ff0-9099a5558708"
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "delete-address",
+							"request": {
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{domain}}/v1/api/addresses/0a8b3a57-b56b-4032-847e-6fe30e3b83f4/?user_id=a1f62d75-a54c-430e-8ff0-9099a5558708",
+									"host": [
+										"{{domain}}"
+									],
+									"path": [
+										"v1",
+										"api",
+										"addresses",
+										"0a8b3a57-b56b-4032-847e-6fe30e3b83f4",
+										""
+									],
+									"query": [
+										{
+											"key": "user_id",
+											"value": "a1f62d75-a54c-430e-8ff0-9099a5558708"
+										}
 									]
 								}
 							},
@@ -733,7 +859,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\n  \"restaurant_id\": \"baea0abd-5077-4eb6-9277-4c601a4cdc12\",\n  \"name\": \"Gourmet Burger\",\n  \"description\": \"1/2 lb. Angus beef patty, with caramelized onions, aged cheddar, and a brioche bun.\",\n  \"price\": 250,\n  \"tags\": [\"burger\", \"beef\", \"gourmet\"],\n  \"allergens\": [\"gluten\", \"dairy\"]\n}",
+									"raw": "{\n  \"restaurant_id\": \"d2328969-6c99-45d6-b97b-e96ab92f21f7\",\n  \"name\": \"Gourmet Burger\",\n  \"description\": \"1/2 lb. Angus beef patty, with caramelized onions, aged cheddar, and a brioche bun.\",\n  \"price\": 250,\n  \"tags\": [\"burger\", \"beef\", \"gourmet\"],\n  \"allergens\": [\"gluten\", \"dairy\"]\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -1081,7 +1207,7 @@
 								{
 									"key": "file",
 									"type": "file",
-									"src": "/home/wendigo/Pictures/Menu/dialog.jpeg"
+									"src": "/home/wendigo/Pictures/Menu/cnc.webp"
 								},
 								{
 									"key": "file_type",
@@ -1105,6 +1231,40 @@
 								"api",
 								"files",
 								""
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "queries",
+			"item": [
+				{
+					"name": "resolve-query",
+					"request": {
+						"method": "POST",
+						"header": [],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n  \"user_id\": \"e87fa04c-bb21-482d-abd7-503583a40bef\",\n  \"query_text\": \"Give me a healthy lunch option\"\n//   \"context\": null,\n//   \"feedback\": null,\n//   \"meta\": {}\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{domain}}/v1/api/queries/resolve",
+							"host": [
+								"{{domain}}"
+							],
+							"path": [
+								"v1",
+								"api",
+								"queries",
+								"resolve"
 							]
 						}
 					},

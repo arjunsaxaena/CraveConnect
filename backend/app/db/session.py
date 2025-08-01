@@ -5,7 +5,7 @@ from app.core.config import Settings
 settings = Settings()
 
 engine = create_engine(
-    settings.DATABASE_URL,
+    settings.DATABASE_URL_NEON,
     pool_pre_ping=True,
     pool_size=20,
     max_overflow=0,

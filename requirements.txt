@@ -8,6 +8,8 @@ langchain
 langchain-google-genai
 google-generativeai
 pydantic
+pydantic-settings
 pgvector 
 python-dotenv
 google-generativeai
+psycopg2-binary
